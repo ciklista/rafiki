@@ -38,16 +38,17 @@ public class RequestFlinkAPI {
 
         //we are printing the response for now!!!
         List<Job> jobs = getJobs(queryJobs);
-        System.out.println("Received " + jobs.size() + " jobs:");
+        System.out.println("Received " + jobs.size() + " job(s):");
 
         for (Job job : jobs) {
-            System.out.println("Job " + job.getName() + ": " + job.getJid() + ": " + job.getState());
+            System.out.println("Job " + job.getJid() + ": " + job.getName() + " (" + job.getState()+ ")");
             Job job_info = getJobInfo(queryJob + job.getJid());
             System.out.println("The job has the following vertices: ");
             for (JobVertex vertex : job_info.getVertices()) {
                 System.out.println("Name: " + vertex.getName());
                 System.out.println("Parallelism: " + vertex.getParallelism());
                 System.out.println("Status: " + vertex.getStatus());
+                System.out.println("---");
             }
             System.out.println("------");
 
