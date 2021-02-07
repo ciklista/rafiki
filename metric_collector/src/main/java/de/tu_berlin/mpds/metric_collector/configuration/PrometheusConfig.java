@@ -17,7 +17,7 @@ public class PrometheusConfig extends ClusterConfig{
   public static final String QUERY_FLINK_TASKMANAGER_STATUS_JVM_CPU_LOAD = "query?query=flink_taskmanager_Status_JVM_CPU_Load";
 
   public static final String QUERY_FLINK_JOBMANAGER_NUM_REGISTERED_TASK_MANAGERS = "query?query=flink_jobmanager_numRegisteredTaskManagers";
-  public static final String QUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS = "query?query=flink_jobmanager_numRegisteredTaskManagers";
+  public static final String QUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS = "query?query=flink_jobmanager_numRunningJobs";
 
   public static final String QUERY_FLINK_JVM_MEMORY_TASKMANAGER_RATIO = "query?query=flink_taskmanager_Status_JVM_Memory_Heap_Used/flink_taskmanager_Status_JVM_Memory_Heap_Committed";
   public static final String QUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO = "query?query=flink_jobmanager_Status_JVM_Memory_Heap_Used/flink_jobmanager_Status_JVM_Memory_Heap_Committed";
