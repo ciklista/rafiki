@@ -8,10 +8,10 @@ import java.util.List;
 
 @Configuration
 @Getter
-public class PrometheusConfig {
+public class PrometheusConfig extends ClusterConfig{
 
   //we will change this configuration class by mapping it to properties file.
-  public static final String BASE_URL_PROMETHEUS = "http://35.246.184.125:30090/api/v1/";
+  public static final String BASE_URL_PROMETHEUS = "http://" + CLUSTER_URL + ":30090/api/v1/";
 
   public static final String QUERY_FLINK_JOBMANAGER_STATUS_JVM_CPU_LOAD = "query?query=flink_jobmanager_Status_JVM_CPU_Load";
   public static final String QUERY_FLINK_TASKMANAGER_STATUS_JVM_CPU_LOAD = "query?query=flink_taskmanager_Status_JVM_CPU_Load";
