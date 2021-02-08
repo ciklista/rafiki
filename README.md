@@ -20,7 +20,7 @@ Deploy a 3 node Kubernetes cluster with the e2-standard-4 machine-type with:
 ```
 gcloud container clusters create mpds-cluster --num-nodes=3  \
   --image-type "UBUNTU" --no-enable-basic-auth  --no-enable-autoupgrade \
-  --cluster-version "1.16.15-gke.4300" --machine-type e2-standard-4
+  --cluster-version "1.17.14-gke.1600" --machine-type e2-standard-4
 ```
 
 After the Kubernetes cluster has been created, configure kubectl with:
@@ -39,7 +39,12 @@ Kafka, Flink, Redis, Prometheus, and Grafana can be deployed on a Kubernetes clu
 
 Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
 
-Deploy the charts with:
+To deplay all helm charts at once:
+```
+cd helm-charts && helm install mpds .
+```
+
+To deploy single charts:
 ```
 helm install [DEPLOYMENT NAME] [CHART DIRECTORY]
 ```
