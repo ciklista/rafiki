@@ -75,7 +75,7 @@ public class RequestMetricService {
 
 
     System.out.println("---- FLINK API -----");
-    List<Job> jobs = flinkAPIMetricService.getJobs(flinkQuery.getFLINK_JOBS(), client, objectMapper);
+    List<Job> jobs = flinkAPIMetricService.getJobs(flinkQuery.getFLINK_JOBS_OVERVIEW(), client, objectMapper);
     System.out.println("Received " + jobs.size() + " job(s):");
 
 
@@ -83,10 +83,18 @@ public class RequestMetricService {
       System.out.println("Job " + job.getJid() + ": " + job.getName() + " (" + job.getState()+ ")");
       Job job_info = flinkAPIMetricService.getJobInfo(flinkQuery.getFLINK_JOBS() + job.getJid(),client,objectMapper);
       System.out.println("The job has the following vertices: ");
+      Integer prev_records_out = -1;
       for (JobVertex vertex : job_info.getVertices()) {
         System.out.println("Name: " + vertex.getName());
         System.out.println("Parallelism: " + vertex.getParallelism());
         System.out.println("Status: " + vertex.getStatus());
+        System.out.println("Number of incoming records: " + vertex.getMetrics().getRead_records());
+        System.out.println("Number of outgoing records: " + vertex.getMetrics().getWrite_records());
+        if (prev_records_out >= 0){
+          int lag = prev_records_out - vertex.getMetrics().getRead_records();
+          System.out.println("->> Vertex is lagging behind by " + lag +  " records");
+        }
+        prev_records_out = vertex.getMetrics().getWrite_records();
         System.out.println("---");
       }
       System.out.println("------");
