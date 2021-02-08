@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import './App.css';
 import Header from './Header/Header';
 import Home from './Home/Home';
+import Server from './Server/Server';
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 function App() {
@@ -10,8 +11,11 @@ function App() {
       <Router>
         <Header />
         <Switch>
-          <Route path="/">
+          <Route exact path="/">
             <Home />
+          </Route>
+          <Route path="/server/:id">
+            <Server />
           </Route>
         </Switch>
       </Router>
