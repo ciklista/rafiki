@@ -1,0 +1,27 @@
+.content {
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    color: rgba(31, 41, 55)
+}
+
+.server {
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 0.25rem;
+    flex-direction: row;
+    justify-content: space-between;
+    display: flex;
+}
+
+.status-green {
+    background-color: rgba(52, 211, 153)
+}
+
+.status-orange {
+    background-color: rgba(245, 158, 11)
+}
+
+.status-red {
+    background-color: rgba(220, 38, 38)
+}

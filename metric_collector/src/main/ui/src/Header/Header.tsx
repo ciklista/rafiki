@@ -1,11 +1,16 @@
 import React from 'react';
 import './Header.css';
+import { Link } from 'react-router-dom'
 
 function Header(): JSX.Element {
     return (
-        <div className="header-body">
-            <div className="header-content">Rafiki</div>
-        </div>
+        <nav>
+            <div className="header-body">
+                <div className="header-content">
+                    <Link to="/">Rafiki</Link>
+                </div>
+            </div>
+        </nav>
     );
 }
 
