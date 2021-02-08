@@ -2,16 +2,11 @@ package de.tu_berlin.mpds.metric_collector.service;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.tu_berlin.mpds.metric_collector.configuration.FlinkConfig;
 import de.tu_berlin.mpds.metric_collector.model.flinkmetric.Job;
-import de.tu_berlin.mpds.metric_collector.model.flinkmetric.JobVertex;
 import de.tu_berlin.mpds.metric_collector.model.flinkmetric.JobsResponse;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;

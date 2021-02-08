@@ -2,9 +2,7 @@ package de.tu_berlin.mpds.metric_collector.service;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.tu_berlin.mpds.metric_collector.configuration.PrometheusConfig;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.PrometheusJsonResponse;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
