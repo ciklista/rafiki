@@ -39,7 +39,12 @@ Kafka, Flink, Redis, Prometheus, and Grafana can be deployed on a Kubernetes clu
 
 Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
 
-Deploy the charts with:
+To deplay all helm charts at once:
+```
+cd helm-charts && helm install mpds .
+```
+
+To deploy single charts:
 ```
 helm install [DEPLOYMENT NAME] [CHART DIRECTORY]
 ```
