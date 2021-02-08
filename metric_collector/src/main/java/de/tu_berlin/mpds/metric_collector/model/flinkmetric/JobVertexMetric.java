@@ -2,6 +2,7 @@ package de.tu_berlin.mpds.metric_collector.model.flinkmetric;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigInteger;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -12,23 +13,23 @@ import lombok.ToString;
 @ToString
 public class JobVertexMetric {
 
-    private Integer read_bytes;
+    private BigInteger read_bytes;
     private String read_bytes_complete;
-    private Integer write_bytes;
+    private BigInteger write_bytes;
     private String write_bytes_complete;
-    private Integer read_records;
+    private BigInteger read_records;
     private String read_records_complete;
-    private Integer write_records;
+    private BigInteger write_records;
     private String write_records_complete;
 
 
-    public JobVertexMetric(@JsonProperty("read-bytes") Integer read_bytes,
+    public JobVertexMetric(@JsonProperty("read-bytes") BigInteger read_bytes,
                            @JsonProperty("read-bytes-complete") String read_bytes_complete,
-                           @JsonProperty("write-bytes") Integer write_bytes,
+                           @JsonProperty("write-bytes") BigInteger write_bytes,
                            @JsonProperty("write-bytes-complete") String write_bytes_complete,
-                           @JsonProperty("read-records") Integer read_records,
+                           @JsonProperty("read-records") BigInteger read_records,
                            @JsonProperty("read-records-complete") String read_records_complete,
-                           @JsonProperty("write-records") Integer write_records,
+                           @JsonProperty("write-records") BigInteger write_records,
                            @JsonProperty("write-records-complete") String write_records_complete) {
         this.read_bytes = read_bytes;
         this.read_bytes_complete = read_bytes_complete;
