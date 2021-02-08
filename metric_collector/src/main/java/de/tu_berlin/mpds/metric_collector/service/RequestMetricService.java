@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tu_berlin.mpds.metric_collector.model.flinkmetric.Job;
 import de.tu_berlin.mpds.metric_collector.model.flinkmetric.JobVertex;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.PrometheusJsonResponse;
+import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.Result;
 import de.tu_berlin.mpds.metric_collector.util.FlinkQuery;
 import de.tu_berlin.mpds.metric_collector.configuration.ApplicationConfiguration;
 import de.tu_berlin.mpds.metric_collector.util.PrometheusQuery;
 import java.util.List;
-import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -41,30 +41,43 @@ public class RequestMetricService {
   //@PostConstruct
   @Scheduled(cron = "0/2 * * * * ?")
   public void init() throws InterruptedException, ExecutionException, IOException {
+    System.out.println("---- PROMETHEUS QUERIES -----");
+
     //we are printing the response for now!!!
+    PrometheusJsonResponse responseFlinkTaskManagerJVMCPULoad = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_TASKMANAGER_STATUS_JVM_CPU_LOAD(), client, objectMapper);
+    List<Result> taskCPUQueryResults = responseFlinkTaskManagerJVMCPULoad.getData().getResult();
+    PrometheusJsonResponse responseFlinkJVMMemoryTaskManagerRatio = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JVM_MEMORY_TASKMANAGER_RATIO(), client, objectMapper);
+    List<Result> taskMemoryQueryResults = responseFlinkJVMMemoryTaskManagerRatio.getData().getResult();
 
-    PrometheusJsonResponse responseFlinkTaskManagerJVMCPULoad = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_TASKMANAGER_STATUS_JVM_CPU_LOAD(),client,objectMapper);
+    System.out.println("Found " + taskCPUQueryResults.size() + " Task Manager(s)");
+    for (int i = 0; i < taskCPUQueryResults.size(); i++) {
+      System.out.println("Pod name: " + taskCPUQueryResults.get(i).getMetric().getKubernetesPodName());
+      System.out.println("Memory load: " + taskMemoryQueryResults.get(i).getValue().get(1));
+      System.out.println("CPU load: " + taskCPUQueryResults.get(i).getValue().get(1));
+      System.out.println("----");
+    }
 
-    System.out.println("responseFlinkTaskManagerJVMCPULoad " + responseFlinkTaskManagerJVMCPULoad.getData().getResult().get(0).getValue().get(1));
+    PrometheusJsonResponse responseFlinkJobManagerJVMCPULoad = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JOBMANAGER_STATUS_JVM_CPU_LOAD(), client, objectMapper);
+    List<Result> jobCPUQueryResults = responseFlinkJobManagerJVMCPULoad.getData().getResult();
+    PrometheusJsonResponse responseFlinkJVMMemoryJobManagerRatio = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO(), client, objectMapper);
+    List<Result> jobMemoryQueryResults = responseFlinkJVMMemoryJobManagerRatio.getData().getResult();
+    System.out.println("----");
+    System.out.println("Found " + jobCPUQueryResults.size() + " Job Manager(s)");
+    for (int i = 0; i < jobCPUQueryResults.size(); i++) {
+      System.out.println("Pod name: " + jobCPUQueryResults.get(i).getMetric().getKubernetesPodName());
+      System.out.println("Memory load: " + jobMemoryQueryResults.get(i).getValue().get(1));
+      System.out.println("CPU load: " + jobCPUQueryResults.get(i).getValue().get(1));
+      System.out.println("----");
+    }
 
-    PrometheusJsonResponse  responseFlinkJobManagerJVMCPULoad = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JOBMANAGER_STATUS_JVM_CPU_LOAD(),client,objectMapper);
-    System.out.println("responseFlinkJobManagerJVMCPULoad " + responseFlinkJobManagerJVMCPULoad.getData().getResult().get(0).getValue().get(1));
-
-    PrometheusJsonResponse  responseFlinkNumOfTaskManager = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JOBMANAGER_NUM_REGISTERED_TASK_MANAGERS(),client,objectMapper);
-    System.out.println("responseFlinkNumOfTaskManager " + responseFlinkNumOfTaskManager.getData().getResult().get(0).getValue().get(1));
-
-    PrometheusJsonResponse  responseFlinkNumOfRunningJobs = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS(),client,objectMapper);
-    System.out.println("responseFlinkNumOfRunningJobs " + responseFlinkNumOfRunningJobs.getData().getResult().get(0).getValue().get(1));
-
-    PrometheusJsonResponse  responseFlinkJVMMemoryTaskManagerRatio = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JVM_MEMORY_TASKMANAGER_RATIO(),client,objectMapper);
-    System.out.println("responseFlinkJVMMemoryTaskManagerRatio " + responseFlinkJVMMemoryTaskManagerRatio.getData().getResult().get(0).getValue().get(1));
-
-    PrometheusJsonResponse responseFlinkJVMMemoryJobManagerRatio = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO(),client,objectMapper);
-    System.out.println("responseFlinkJVMMemoryJobManagerRatio " + responseFlinkJVMMemoryJobManagerRatio.getData().getResult().get(0).getValue().get(1));
+    PrometheusJsonResponse responseFlinkNumOfRunningJobs = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS(), client, objectMapper);
+    System.out.println("Number of running jobs: " + responseFlinkNumOfRunningJobs.getData().getResult().get(0).getValue().get(1));
 
 
-    List<Job> jobs = flinkAPIMetricService.getJobs(flinkQuery.getFLINK_JOBS_OVERVIEW(),client,objectMapper);
+    System.out.println("---- FLINK API -----");
+    List<Job> jobs = flinkAPIMetricService.getJobs(flinkQuery.getFLINK_JOBS(), client, objectMapper);
     System.out.println("Received " + jobs.size() + " job(s):");
+
 
     for (Job job : jobs) {
       System.out.println("Job " + job.getJid() + ": " + job.getName() + " (" + job.getState()+ ")");

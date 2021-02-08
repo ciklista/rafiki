@@ -17,7 +17,7 @@ public class PrometheusQuery {
 
   private static final String QUERY_FLINK_JOBMANAGER_NUM_REGISTERED_TASK_MANAGERS = "query?query=flink_jobmanager_numRegisteredTaskManagers";
 
-  private static final String QUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS = "query?query=flink_jobmanager_numRegisteredTaskManagers";
+  private static final String QUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS = "query?query=flink_jobmanager_numRunningJobs";
 
   private static final String QUERY_FLINK_JVM_MEMORY_TASKMANAGER_RATIO = "query?query=flink_taskmanager_Status_JVM_Memory_Heap_Used/flink_taskmanager_Status_JVM_Memory_Heap_Committed";
 
