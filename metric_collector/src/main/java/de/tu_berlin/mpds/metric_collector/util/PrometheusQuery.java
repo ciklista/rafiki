@@ -1,6 +1,7 @@
 package de.tu_berlin.mpds.metric_collector.util;
 
 import de.tu_berlin.mpds.metric_collector.configuration.ApplicationConfiguration;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +48,7 @@ public class PrometheusQuery {
 
   private static final String QUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = "query?query=flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max";
 
-
+  private static final String QUERY_MAX_FLINK_TASKMANAGER_JOB_TASK_NUMRECORDSOUTPERSECOND = "max by (task_id) (flink_taskmanager_job_task_numRecordsOutPerSecond)";
 
   public String getBaseUrlPrometheus() {
     BASE_URL_PROMETHEUS = applicationConfiguration.getClusteraddress() + ":" + applicationConfiguration.getPrometheusPort() + applicationConfiguration.getPrometheusapibasepath();
@@ -68,6 +69,9 @@ public class PrometheusQuery {
     return getBaseUrlPrometheus() + QUERY_FLINK_JOBMANAGER_NUM_REGISTERED_TASK_MANAGERS;
   }
 
+  public String getQUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO() {
+    return getBaseUrlPrometheus() + QUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO;
+  }
   public String getQUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS() {
     return getBaseUrlPrometheus() + QUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS;
   }
@@ -76,8 +80,8 @@ public class PrometheusQuery {
     return getBaseUrlPrometheus() + QUERY_FLINK_JVM_MEMORY_TASKMANAGER_RATIO;
   }
 
-  public String getQUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO() {
-    return getBaseUrlPrometheus() + QUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO;
+  public String getQUERY_MAX_FLINK_TASKMANAGER_JOB_TASK_NUMRECORDSOUTPERSECOND() {
+    return QUERY_MAX_FLINK_TASKMANAGER_JOB_TASK_NUMRECORDSOUTPERSECOND;
   }
 
   public  String getQUERY_KAFKA_MESSAGE_IN_PER_SEC() {

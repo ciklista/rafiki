@@ -1,5 +1,6 @@
 package de.tu_berlin.mpds.metric_collector.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tu_berlin.mpds.metric_collector.model.flinkmetric.Job;
@@ -11,6 +12,13 @@ import de.tu_berlin.mpds.metric_collector.configuration.ApplicationConfiguration
 import de.tu_berlin.mpds.metric_collector.util.PrometheusQuery;
 import java.math.BigInteger;
 import java.util.List;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
+import java.util.*;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -35,12 +43,66 @@ public class RequestMetricService {
   private FlinkQuery flinkQuery;
 
 
-  //@PostConstruct
-  @Scheduled(cron = "0/2 * * * * ?")
-  public void init() throws InterruptedException, ExecutionException, IOException {
-    System.out.println("---- PROMETHEUS QUERIES -----");
+
+  public void init() throws InterruptedException, ExecutionException, JsonProcessingException {
+      /*
+    PROCESS:
+
+    get all jobs and their configuration (task_subtasks)
+    initialize {task_subtask: capacity} mapping
+    while True:
+
+      for every job (running or stopped):
+           - get the tasks and their subtasks (parallelism)
+           - find timestamps where task_subtask backpressure > 0.5
+           - for those task_subtasks:
+                - find number of processed messages during that time:
+                  - globally (number of incoming kafka messages) -> capacity of the job
+                  - outgoing messages per task_subtask  -> capacity of one node
+                - update {task_subtask: capacity}
+      if {task_subtask: capacity} has not changed:
+        break
+
+      else:
+        increase load / inject failures
 
 
+       */
+
+      System.out.println("Initializing the system.");
+      System.out.println("Looking for Jobs (running and stopped)...");
+      List<Job> jobs = flinkAPIMetricService.getJobs(client, objectMapper);
+      System.out.println("Found " + jobs.size() + " job(s):");
+      for (Job job : jobs) {
+          System.out.println("Analyzing data for job " + job.getJid() + ": "
+                  + job.getName() + " (" + job.getState() + ")");
+          Job job_info = flinkAPIMetricService.getJobInfo(job.getJid(), client, objectMapper);
+
+          System.out.println("The job has the following Tasks: ");
+          for (JobVertex task : job_info.getVertices()) {
+              System.out.println("Name: " + task.getName());
+              System.out.println("Parallelism: " + task.getParallelism());
+              System.out.println("Status: " + task.getStatus());
+          }
+
+      }
+      ZonedDateTime endDate = ZonedDateTime.now().plusDays(1).with(LocalTime.of(0, 0));
+      // go back 7 days
+      ZonedDateTime startDate = endDate.minusDays(7);
+
+      Map<String, List<Map<Integer, Double>>> max_values = new HashMap<>();
+
+      // get all the timestamps where backpressure > 0.5
+      while (!startDate.isAfter(endDate)) {
+
+      }
+
+      // calculate the max and the corresponding timestamp
+
+    @Scheduled(cron = "0/2 * * * * ?")
+    public void run() throws InterruptedException, ExecutionException, IOException {
+        this.init();
+        System.out.println("---- PROMETHEUS QUERIES -----");
     try {
       PrometheusJsonResponse responseFlinkTaskManagerJVMCPULoad = prometheusMetricService.sendRequestToPrometheusForMetric(prometheusQuery.getQUERY_FLINK_TASKMANAGER_STATUS_JVM_CPU_LOAD(), client, objectMapper);
       List<Result> taskCPUQueryResults = responseFlinkTaskManagerJVMCPULoad.getData().getResult();
@@ -132,4 +194,5 @@ public class RequestMetricService {
       System.out.println("----");
     }
   }
+
 }
