@@ -17,7 +17,7 @@ public class JobSubtask {
     private JobVertexMetric metrics;
 
 
-    public JobSubtask(@JsonProperty("id") String id, @JsonProperty("status") String status,
+    public JobSubtask(@JsonProperty("subtask") String id, @JsonProperty("status") String status,
                       @JsonProperty("metrics") JobVertexMetric metrics) {
         this.status = status;
         this.id = id;

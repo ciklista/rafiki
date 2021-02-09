@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,35 +33,49 @@ public class PrometheusMetricService {
     @Autowired
     private PrometheusQuery prometheusQuery;
 
-    PrometheusJsonResponse sendRequestToPrometheusForMetric(String urlWithQuery, HttpClient client, ObjectMapper objectMapper) throws
+    PrometheusJsonResponse executePrometheusQuery(URI uri, HttpClient client, ObjectMapper objectMapper) throws
             InterruptedException, ExecutionException, IOException {
 
-        HttpRequest request = HttpRequest.newBuilder(URI.create(urlWithQuery)).GET().build();
+        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
 
         CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
 
         return objectMapper.readValue(response.get().body(), PrometheusJsonResponse.class);
     }
 
-    PrometheusJsonResponse sendRangeQuery(String queryString, ZonedDateTime start, ZonedDateTime end, String step, HttpClient client, ObjectMapper objectMapper) throws
-            InterruptedException, ExecutionException, IOException {
+    Map<String, List<List<Double>>> getBackpressuredSubTasks(Integer daysToGoBack) throws InterruptedException, ExecutionException, IOException {
+        // Key of the hashmap will be jobId_TaskId_SubtaskIndex
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.000'Z'");
+        HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+        ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ZonedDateTime endDate = ZonedDateTime.now().plusDays(1).with(LocalTime.of(0, 0));
+        ZonedDateTime startDate = endDate.minusDays(daysToGoBack);
 
-        URI uri = UrlBuilder.fromString(prometheusQuery.getBaseUrlPrometheus())
-                .withPath("api/v1/query_range")
-                .addParameter("query", queryString)
-                .addParameter("start", start.format(formatter))
-                .addParameter("end", end.format(formatter))
-                .addParameter("step", step)
-                .toUri();
+        Map<String, List<List<Double>>> resultMap = new HashMap<>();
+        while (!startDate.isAfter(endDate)) {
+            URI uri = prometheusQuery.getQUERY_BACKPRESSURE_BY_SUBTASK(startDate, startDate.plusDays(1), "10s");
+            List<Result> queryResult = executePrometheusQuery(uri, client, objectMapper).getData().getResult();
+            for (Result result : queryResult) {
+                String key = result.getMetric().getJobId() + "_" +
+                                result.getMetric().getTaskId() + "_" +
+                                result.getMetric().getSubtaskIndex();
 
-        HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
-        ;
+                if (!resultMap.containsKey(key)) {
+                    List<List<Double>> initList = new ArrayList<>();
+                    resultMap.put(key, initList);
+                }
+                for (List value : result.getValues()) {
+                    Integer timestamp = (Integer) value.get(0);
+                    Double metric = Double.parseDouble((String) value.get(1));
+                    resultMap.get(key).add(List.of(timestamp.doubleValue(), metric));
+                }
 
-        CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
 
-        return objectMapper.readValue(response.get().body(), PrometheusJsonResponse.class);
+            }
+            startDate = startDate.plusDays(1);
+        }
+
+        return resultMap;
     }
 
     Map<String, List<Double>> getMaxValuesFromRangeQueryByTaskId(String rangeQueryString, Integer daysToGoBack)
@@ -73,8 +88,8 @@ public class PrometheusMetricService {
 
         Map<String, List<Double>> max_values = new HashMap<>();
         while (!startDate.isAfter(endDate)) {
-            List<Result> results = sendRangeQuery(rangeQueryString,
-                    startDate, startDate.plusDays(1), "10s", client, objectMapper).getData().getResult();
+            URI uri = prometheusQuery.getQUERY_BACKPRESSURE_BY_SUBTASK(startDate, startDate.plusDays(1), "10s");
+            List<Result> results = executePrometheusQuery(uri, client, objectMapper).getData().getResult();
             for (Result result : results) {
                 String task_id = result.getMetric().getTaskId();
                 List<List<Object>> values = result.getValues();
