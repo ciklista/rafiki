@@ -24,6 +24,7 @@ public class Metric {
   private String job;
   private String kubernetesNamespace;
   private String kubernetesPodName;
+  private String taskId;
   private String podTemplateHash;
   private String tmId;
 
@@ -31,7 +32,8 @@ public class Metric {
   public Metric(@JsonProperty("__name__") String name,@JsonProperty("app") String app, @JsonProperty("component") String component,
                 @JsonProperty("host") String host, @JsonProperty("instance") String instance,@JsonProperty("job") String job,
                 @JsonProperty("kubernetes_namespace") String kubernetesNamespace,@JsonProperty("kubernetes_pod_name") String kubernetesPodName,
-                @JsonProperty("pod_template_hash") String podTemplateHash,@JsonProperty("tm_id") String tmId) {
+                @JsonProperty("pod_template_hash") String podTemplateHash,@JsonProperty("tm_id") String tmId,
+                @JsonProperty("task_id") String task_id) {
     this.name = name;
     this.app = app;
     this.component = component;
@@ -42,5 +44,6 @@ public class Metric {
     this.kubernetesPodName = kubernetesPodName;
     this.podTemplateHash = podTemplateHash;
     this.tmId = tmId;
+    this.taskId = task_id;
   }
 }
