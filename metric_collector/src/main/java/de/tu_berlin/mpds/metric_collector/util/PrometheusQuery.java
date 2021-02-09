@@ -2,7 +2,6 @@ package de.tu_berlin.mpds.metric_collector.util;
 
 import de.tu_berlin.mpds.metric_collector.configuration.ApplicationConfiguration;
 import io.mikael.urlbuilder.UrlBuilder;
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
