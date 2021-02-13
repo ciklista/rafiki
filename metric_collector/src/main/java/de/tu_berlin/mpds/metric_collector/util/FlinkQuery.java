@@ -13,6 +13,7 @@ public class FlinkQuery {
   private String FLINK_JOBS_OVERVIEW =  "/jobs/overview";
   private String FLINK_JOBS = "/jobs/";
 
+
   @Autowired
   private ApplicationConfiguration applicationConfiguration;
 
@@ -28,5 +29,9 @@ public class FlinkQuery {
 
   public String getFLINK_JOBS() {
     return getBASE_URL_FLINK() + FLINK_JOBS;
+  }
+
+  public String getFLINK_SUBTASK_INFORMATION(String job_id, String vertexId) {
+    return getBASE_URL_FLINK() + FLINK_JOBS + job_id + "/vertices/" + vertexId;
   }
 }

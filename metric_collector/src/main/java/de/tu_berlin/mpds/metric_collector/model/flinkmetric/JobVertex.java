@@ -19,16 +19,14 @@ public class JobVertex {
     private String name;
     private Integer parallelism;
     private String status;
-    private JobVertexMetric metrics;
+    private List<JobSubtask> subtasks;
 
 
     public JobVertex(@JsonProperty("id") String id, @JsonProperty("status") String status,
-                     @JsonProperty("name") String name, @JsonProperty("parallelism") Integer parallelism,
-                     @JsonProperty("metrics") JobVertexMetric metrics) {
+                     @JsonProperty("name") String name, @JsonProperty("parallelism") Integer parallelism) {
         this.status = status;
         this.id = id;
         this.name = name;
         this.parallelism = parallelism;
-        this.metrics = metrics;
     }
 }

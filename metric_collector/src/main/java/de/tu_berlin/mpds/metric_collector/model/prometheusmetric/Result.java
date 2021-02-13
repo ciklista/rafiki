@@ -11,15 +11,19 @@ import java.util.List;
 
 @Getter
 @Setter
-@JsonPropertyOrder({"metric","value"})
+@JsonPropertyOrder({"metric", "value"})
 @ToString
 public class Result {
 
-  private Metric metric;
-  private List<Object> value;
 
-  public Result(@JsonProperty("metric") Metric metric,@JsonProperty("value") List<Object> value) {
-    this.metric = metric;
-    this.value = value;
-  }
+    private Metric metric;
+    private List<Object> value;
+    private List<List<Object>> values;
+
+    public Result(@JsonProperty("metric") Metric metric, @JsonProperty("value") List<Object> value,
+                  @JsonProperty("values") List<List<Object>> values) {
+        this.metric = metric;
+        this.value = value;
+        this.values = values;
+    }
 }
