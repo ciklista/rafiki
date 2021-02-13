@@ -1,0 +1,32 @@
+version: '3.4'
+
+services:
+  metric-collector-app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    networks:
+      - metric_collector
+    container_name: metric_collector
+
+  postgres:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_USER=mpds
+      - POSTGRES_DB=metric_collector
+    container_name: postgres
+    volumes:
+      - pg_metrics:/var/lib/postgresql/data
+    ports:
+      - "30050:5432"
+    networks:
+      - metric_collector
+
+volumes:
+  pg_metrics:
+
+networks:
+  metric_collector:
