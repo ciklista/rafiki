@@ -29,7 +29,6 @@ public class FlinkAPIMetricService {
     protected List<Job> getJobs(HttpClient client, ObjectMapper objectMapper) throws ExecutionException, InterruptedException, JsonProcessingException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getFLINK_JOBS_OVERVIEW())).GET().build();
         CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-        String responseString = response.get().body();
         return objectMapper.readValue(response.get().body(), JobsResponse.class).getJobs();
     }
 
