@@ -7,7 +7,7 @@ import Graph from '../Job-Graph/Job-Graph'
 export default function Server() {
     let { id } = useParams<{ id: string }>();
 
-    const [server, setServer] = useState<IServer | any>()
+    const [server, setServer] = useState<Partial<IServer>>({})
     useEffect(() => {
         axios.get(`http://localhost:3000/servers/${id}`)
             .then(response => {
@@ -18,7 +18,7 @@ export default function Server() {
     }, [id])
     return (
         <div>
-            <div>{server.id}</div>
+            <div>{server.name}</div>
             <Graph />
         </div>
     )
