@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-image: pfisterb/flink:1.11.2-scala_2.12-java_11
+image: pfisterb/flink:1.12.1
 
 ## Change flink jobmanager configuration parameters below:
 jobmanager:
