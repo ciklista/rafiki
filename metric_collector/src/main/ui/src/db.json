@@ -2,26 +2,26 @@
   "servers": [
     {
       "id": 1,
-      "name": "Test",
-      "ip_adress": "10.0.0.1",
+      "name": "Advertising Campain",
+      "ip_adress": "23.33.176.331",
       "status": "red"
     },
     {
       "id": 2,
-      "name": "Test",
-      "ip_adress": "11.0.0.1",
+      "name": "Traffic Speed Job",
+      "ip_adress": "34.12.33.198",
       "status": "green"
     },
     {
       "id": 3,
-      "name": "Test",
-      "ip_adress": "12.0.0.1",
+      "name": "Social Media Influence",
+      "ip_adress": "156.334.12.331",
       "status": "orange"
     },
     {
       "id": 4,
       "name": "Test",
-      "ip_adress": "13.0.0.1",
+      "ip_adress": "10.0.0.1",
       "status": "green"
     }
   ]
