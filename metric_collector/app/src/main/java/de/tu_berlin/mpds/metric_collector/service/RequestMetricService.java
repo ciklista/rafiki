@@ -2,9 +2,9 @@ package de.tu_berlin.mpds.metric_collector.service;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.tu_berlin.mpds.metric_collector.model.flinkmetric.Job;
-import de.tu_berlin.mpds.metric_collector.model.flinkmetric.JobSubtask;
-import de.tu_berlin.mpds.metric_collector.model.flinkmetric.JobVertex;
+import de.tu_berlin.mpds.metric_collector.model.flinkapi.Job;
+import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobSubtask;
+import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobVertex;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.PrometheusJsonResponse;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.Result;
 import de.tu_berlin.mpds.metric_collector.util.FlinkQuery;
@@ -32,7 +32,7 @@ public class RequestMetricService {
     private final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     ;
     @Autowired
-    private FlinkAPIMetricService flinkAPIMetricService;
+    private FlinkAPIService flinkAPIService;
     @Autowired
     private PrometheusMetricService prometheusMetricService;
     @Autowired
@@ -70,12 +70,12 @@ public class RequestMetricService {
         // STEP 1
         System.out.println("Initializing the system.");
         System.out.println("Looking for Jobs (running and stopped)...");
-        List<Job> jobs = flinkAPIMetricService.getJobs(client, objectMapper);
+        List<Job> jobs = flinkAPIService.getJobs(client, objectMapper);
         System.out.println("Found " + jobs.size() + " job(s):");
         for (Job job : jobs) {
             System.out.println("Analyzing data for job " + job.getJid() + ": "
                     + job.getName() + " (" + job.getState() + ")");
-            Job job_info = flinkAPIMetricService.getJobInfo(job.getJid(), client, objectMapper);
+            Job job_info = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
             job.setVertices(job_info.getVertices());
             System.out.println("The job has the following Tasks: ");
             for (JobVertex task : job_info.getVertices()) {
@@ -168,12 +168,12 @@ public class RequestMetricService {
 
 
             System.out.println("---- FLINK API -----");
-            List<Job> jobs = flinkAPIMetricService.getJobs(client, objectMapper);
+            List<Job> jobs = flinkAPIService.getJobs(client, objectMapper);
             System.out.println("Received " + jobs.size() + " job(s):");
 
             for (Job job : jobs) {
                 System.out.println("Job " + job.getJid() + ": " + job.getName() + " (" + job.getState() + ")");
-                Job job_info = flinkAPIMetricService.getJobInfo(job.getJid(), client, objectMapper);
+                Job job_info = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
                 System.out.println("The job has the following vertices: ");
                 for (JobVertex vertex : job_info.getVertices()) {
                     System.out.println("Name: " + vertex.getName());
