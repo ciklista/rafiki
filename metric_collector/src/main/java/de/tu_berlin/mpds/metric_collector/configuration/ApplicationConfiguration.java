@@ -20,6 +20,7 @@ public class ApplicationConfiguration {
 
   private String flinkport;
 
+  private String jarname;
 
  public String getClusteraddress() {
   return clusteraddress;
@@ -51,5 +52,11 @@ public class ApplicationConfiguration {
 
  public void setFlinkPort(String fport) {
   this.flinkport = fport;
+ }
+
+ public String getJarName() { return jarname; }
+
+ public void setJarName(String jarname) {
+  this.jarname = jarname;
  }
 }
