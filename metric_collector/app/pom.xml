@@ -84,6 +84,11 @@
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<version>2.3.3.RELEASE</version>
 		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.2.18.jre7</version>
+		</dependency>
 
 
 	</dependencies>
