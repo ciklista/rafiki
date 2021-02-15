@@ -2,14 +2,18 @@ package de.tu_berlin.mpds.metric_collector.service;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.tu_berlin.mpds.metric_collector.model.db.KafkaMetrics;
+import de.tu_berlin.mpds.metric_collector.model.db.OperatorMetrics;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.Job;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobSubtask;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobVertex;
+import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobsResponse;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.PrometheusJsonResponse;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.Result;
 import de.tu_berlin.mpds.metric_collector.util.FlinkQuery;
 import de.tu_berlin.mpds.metric_collector.util.PrometheusQuery;
 
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -65,7 +69,7 @@ public class RequestMetricService {
         increase load / inject failures
 
 
-       */
+
 
         // STEP 1
         System.out.println("Initializing the system.");
@@ -113,85 +117,15 @@ public class RequestMetricService {
      System.out.println("Finished initialization");
      System.out.println("----------");
 
-
+   */
    }
 
     @Scheduled(cron = "0/2 * * * * ?")
     public void live_run() throws InterruptedException, ExecutionException, IOException {
+
         System.out.println("---- PROMETHEUS QUERIES -----");
-        try {
-            PrometheusJsonResponse responseFlinkTaskManagerJVMCPULoad = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_STATUS_JVM_CPU_LOAD(), client, objectMapper);
-            List<Result> taskCPUQueryResults = responseFlinkTaskManagerJVMCPULoad.getData().getResult();
-            PrometheusJsonResponse responseFlinkJVMMemoryTaskManagerRatio = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_JVM_MEMORY_TASKMANAGER_RATIO(), client, objectMapper);
-            List<Result> taskMemoryQueryResults = responseFlinkJVMMemoryTaskManagerRatio.getData().getResult();
 
-            System.out.println("Found " + taskCPUQueryResults.size() + " Task Manager(s)");
-            printQueryResults(taskCPUQueryResults, taskMemoryQueryResults);
-
-            PrometheusJsonResponse responseFlinkJobManagerJVMCPULoad = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_JOBMANAGER_STATUS_JVM_CPU_LOAD(), client, objectMapper);
-            List<Result> jobCPUQueryResults = responseFlinkJobManagerJVMCPULoad.getData().getResult();
-            PrometheusJsonResponse responseFlinkJVMMemoryJobManagerRatio = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_JVM_MEMORY_JOBMANAGER_RATIO(), client, objectMapper);
-            List<Result> jobMemoryQueryResults = responseFlinkJVMMemoryJobManagerRatio.getData().getResult();
-            System.out.println("----");
-            System.out.println("Found " + jobCPUQueryResults.size() + " Job Manager(s)");
-            printQueryResults(jobCPUQueryResults, jobMemoryQueryResults);
-
-            PrometheusJsonResponse responseFlinkNumOfRunningJobs = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_JOBMANAGER_NUM_RUNNING_JOBS(), client, objectMapper);
-            System.out.println("Number of running jobs: " + responseFlinkNumOfRunningJobs.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseFlinkNumOfRunningTaskManager = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_JOBMANAGER_NUM_REGISTERED_TASK_MANAGERS(), client, objectMapper);
-            System.out.println("Number of running TaskManagers: " + responseFlinkNumOfRunningTaskManager.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_KAFKA_MESSAGE_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(), client, objectMapper);
-            System.out.println("QUERY_KAFKA_MESSAGE_IN_PER_SEC: " + responseQUERY_KAFKA_MESSAGE_IN_PER_SEC.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_KAFKA_BYTES_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_BYTES_IN_PER_SEC(), client, objectMapper);
-            System.out.println("QUERY_KAFKA_BYTES_IN_PER_SEC: " + responseQUERY_KAFKA_BYTES_IN_PER_SEC.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_FLINK_TASKMANAGER_NUM_RECORDS_IN = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_NUM_RECORDS_IN(), client, objectMapper);
-            System.out.println("QUERY_FLINK_TASKMANAGER_NUM_RECORDS_IN: " + responseQUERY_FLINK_TASKMANAGER_NUM_RECORDS_IN.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_FLINK_TASKMANAGER_OPERATOR_NUM_RECORDS_OUT = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_OPERATOR_NUM_RECORDS_OUT(), client, objectMapper);
-            System.out.println("QUERY_FLINK_TASKMANAGER_OPERATOR_NUM_RECORDS_OUT: " + responseQUERY_FLINK_TASKMANAGER_OPERATOR_NUM_RECORDS_OUT.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_OPERATOR_ID = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_OPERATOR_ID(), client, objectMapper);
-            System.out.println("QUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_OPERATOR_ID: " + responseQUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_OPERATOR_ID.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_QUANTILE = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_QUANTILE(), client, objectMapper);
-            System.out.println("QUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_QUANTILE: " + responseQUERY_FLINK_TASKMANAGER_SUBTASK_LATENCY_AVG_BY_QUANTILE.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE(), client, objectMapper);
-            System.out.println("QUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE: " + responseQUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE.getData().getResult().get(0).getValue().get(1));
-
-            PrometheusJsonResponse responseQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(), client, objectMapper);
-            System.out.println("QUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX: " + responseQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX.getData().getResult().get(0).getValue().get(1));
-
-
-            System.out.println("---- FLINK API -----");
-            List<Job> jobs = flinkAPIService.getJobs(client, objectMapper);
-            System.out.println("Received " + jobs.size() + " job(s):");
-
-            for (Job job : jobs) {
-                System.out.println("Job " + job.getJid() + ": " + job.getName() + " (" + job.getState() + ")");
-                Job job_info = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
-                System.out.println("The job has the following vertices: ");
-                for (JobVertex vertex : job_info.getVertices()) {
-                    System.out.println("Name: " + vertex.getName());
-                    System.out.println("Parallelism: " + vertex.getParallelism());
-                    System.out.println("Status: " + vertex.getStatus());
-                    System.out.println("---");
-                }
-                System.out.println("------");
-
-            }
-
-        } catch (NullPointerException e) {
-            System.out.println("Null pointer exception");
-        } catch (IndexOutOfBoundsException e) {
-            System.out.println("IndexOutOfBoundsException ");
-        }
     }
-
     private void printQueryResults(List<Result> jobCPUQueryResults, List<Result> jobMemoryQueryResults) {
         for (int i = 0; i < jobCPUQueryResults.size(); i++) {
             System.out.println("Pod name: " + jobCPUQueryResults.get(i).getMetric().getKubernetesPodName());
@@ -200,5 +134,57 @@ public class RequestMetricService {
             System.out.println("----");
         }
     }
+
+  protected KafkaMetrics gatherKafkaMetric(String topic, HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
+    PrometheusJsonResponse FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX =  prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(),client,objectMapper);
+    PrometheusJsonResponse KAFKA_MESSAGE_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(topic),client,objectMapper);
+    long kafkaLag = FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX.getData().getResult().get(1).getValue().get(1);
+    long kafkaMessagesInPerSecond = KAFKA_MESSAGE_IN_PER_SEC.getData().getResult().get(1).getValue().get(1);
+    return new KafkaMetrics(kafkaLag, kafkaMessagesInPerSecond);
+  }
+
+  protected OperatorMetrics gatherOperatorMetric( HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
+    String operatorId;
+    String operatorCompact = "";
+    String operatorName;
+    int parallelism = 0;
+    long bytesIn = 0;
+    long recordsIn = 0;
+    long bytesOut = 0;
+    long recordsOut = 0;
+    long backPressure;
+    long latency;
+    OperatorMetrics operatorMetrics = new OperatorMetrics();
+
+     List<Job> jobsResponse = flinkAPIService.getJobs(client, objectMapper);
+    for(Job job: jobsResponse){
+      if(job.getState().equals("RUNNING")){
+        Job jobInfo = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
+        PrometheusJsonResponse prometheusJsonResponse = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE(job.getJid()),client,objectMapper);
+        PrometheusJsonResponse prometheusJsonResponse1 = prometheusMetricService.executePrometheusQuery(prometheusQuery.getflink_taskmanager_job_latency(job.getJid()),client,objectMapper);
+        backPressure = prometheusJsonResponse.getData().getResult().get(1).getValue().get(1);
+        latency = prometheusJsonResponse1.getData().getResult().get(1).getValue().get(1);
+        for(int i=0; i < jobInfo.getVertices().size(); i++){
+          operatorId = jobInfo.getVertices().get(i).getId();
+          operatorName= jobInfo.getVertices().get(i).getName();
+          operatorCompact = operatorId+operatorName;
+          parallelism= jobInfo.getVertices().get(i).getParallelism();
+          bytesIn = jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getRead_bytes();
+          recordsIn = jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getRead_records();
+          bytesOut= jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getWrite_bytes();
+          recordsOut= jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getWrite_records();
+        }
+        operatorMetrics.setMaxBackPresure(backPressure);
+        operatorMetrics.setMaxLatency(latency);
+        operatorMetrics.setOperatorParallelism(parallelism);
+        operatorMetrics.setOperatorId(operatorCompact);
+        operatorMetrics.setMaxBytesIn(bytesIn);
+        operatorMetrics.setMaxBytesOut(bytesOut);
+        operatorMetrics.setMaxRecordsIn(recordsIn);
+        operatorMetrics.setMaxRecordsOut(recordsOut);
+      }
+    }
+    return operatorMetrics;
+  }
 
 }
