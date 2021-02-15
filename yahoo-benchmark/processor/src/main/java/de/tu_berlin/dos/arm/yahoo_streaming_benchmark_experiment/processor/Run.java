@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import org.json.JSONObject;
 
 public class Run {
 
@@ -116,13 +117,27 @@ public class Run {
     public static void main(final String[] args) throws Exception {
 
         // ensure checkpoint interval is supplied as an argument
-        if (args.length != 1) {
-            throw new IllegalStateException("Required Command line argument: [CHECKPOINT_INTERVAL]");
+        if (args.length != 2) {
+            throw new IllegalStateException("Required Command line argument: [CHECKPOINT_INTERVAL] [PARALLELISM_CONFIGURATIONS]");
         }
         int interval = Integer.parseInt(args[0]);
 
         // retrieve properties from file
         Properties props = FileReader.GET.read("advertising.properties", Properties.class);
+
+        JSONObject parallelismConfig = new JSONObject(args[1]);
+        String[] requiredParallelismParameters = {
+                props.getProperty("operator.deserializebolt.name"),
+                props.getProperty("operator.eventfilterbolt.name"),
+                props.getProperty("operator.project.name"),
+                props.getProperty("operator.redisjoinbolt.name"),
+                props.getProperty("operator.campaignprocessor.name")
+                };
+        for (String requiredParallelismParameter : requiredParallelismParameters) {
+            if (!parallelismConfig.has(requiredParallelismParameter)) {
+                throw new IllegalStateException("Required parallelism parameter missing: " + requiredParallelismParameter);
+            }
+        }
 
         // creating map for global properties
         Map<String, String> propsMap = new HashMap<>();
@@ -179,25 +194,29 @@ public class Run {
         // create direct kafka stream
         DataStream<AdEvent> messageStream =
             env.addSource(myConsumer)
-                .name("DeserializeBolt")
-                .setParallelism(Integer.parseInt(props.getProperty("kafka.partitions")));
+                .name(props.getProperty("operator.deserializebolt.name"))
+                .setParallelism((Integer) parallelismConfig.get(props.getProperty("operator.deserializebolt.name")));
 
         messageStream
             //Filter the records if event type is "view"
             .filter(new EventFilterBolt())
-            .name("EventFilterBolt")
+            .name(props.getProperty("operator.eventfilterbolt.name"))
+            .setParallelism((Integer) parallelismConfig.get(props.getProperty("operator.eventfilterbolt.name")))
             // project the event
             .map(new EventMapper())
-            .name("project")
+            .name(props.getProperty("operator.project.name"))
+            .setParallelism((Integer) parallelismConfig.get(props.getProperty("operator.project.name")))
             // perform join with redis data
             .flatMap(new RedisJoinBolt())
-            .name("RedisJoinBolt")
+            .name(props.getProperty("operator.redisjoinbolt.name"))
+            .setParallelism((Integer) parallelismConfig.get(props.getProperty("operator.redisjoinbolt.name")))
             // process campaign
             .keyBy(0)
             //.flatMap(new CampaignProcessor())
             .timeWindow(Time.milliseconds(10000))
             .process(new CampaignProcessorV2())
-            .name("CampaignProcessor");
+            .name(props.getProperty("operator.campaignprocessor.name"))
+            .setParallelism((Integer) parallelismConfig.get(props.getProperty("operator.campaignprocessor.name")));
 
         env.execute("Advertising");
     }
