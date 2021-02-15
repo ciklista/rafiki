@@ -45,7 +45,7 @@ public class RequestMetricService {
     private FlinkQuery flinkQuery;
 
 
-   @PostConstruct
+  // @PostConstruct
     public void init() throws InterruptedException, ExecutionException, IOException {
       /*
     PROCESS:
@@ -124,6 +124,8 @@ public class RequestMetricService {
     public void live_run() throws InterruptedException, ExecutionException, IOException {
 
         System.out.println("---- PROMETHEUS QUERIES -----");
+       KafkaMetrics kafkaMetrics= gatherKafkaMetric(client,objectMapper);
+      System.out.println(kafkaMetrics.toString());
 
     }
     private void printQueryResults(List<Result> jobCPUQueryResults, List<Result> jobMemoryQueryResults) {
@@ -135,12 +137,29 @@ public class RequestMetricService {
         }
     }
 
-  protected KafkaMetrics gatherKafkaMetric(String topic, HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
-    PrometheusJsonResponse FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX =  prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(),client,objectMapper);
-    PrometheusJsonResponse KAFKA_MESSAGE_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(topic),client,objectMapper);
-    long kafkaLag = FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX.getData().getResult().get(1).getValue().get(1);
-    long kafkaMessagesInPerSecond = KAFKA_MESSAGE_IN_PER_SEC.getData().getResult().get(1).getValue().get(1);
-    return new KafkaMetrics(kafkaLag, kafkaMessagesInPerSecond);
+  protected KafkaMetrics gatherKafkaMetric(HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
+    String operatorId;
+    KafkaMetrics kafkaMetrics = new KafkaMetrics();
+    PrometheusJsonResponse FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = null;
+    PrometheusJsonResponse KAFKA_MESSAGE_IN_PER_SEC = null;
+    List<Job> jobsResponse = flinkAPIService.getJobs(client, objectMapper);
+    for(Job job: jobsResponse){
+      if(job.getState().equals("RUNNING")) {
+        Job jobInfo = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
+        for(int i=0; i < jobInfo.getVertices().size(); i++){
+          operatorId = jobInfo.getVertices().get(i).getId();
+           FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX =  prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(), client, objectMapper);
+           KAFKA_MESSAGE_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(operatorId), client, objectMapper);
+          long kafkaLag = FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX.getData().getResult().get(1).getValue().get(1);
+          long kafkaMessagesInPerSecond = KAFKA_MESSAGE_IN_PER_SEC.getData().getResult().get(1).getValue().get(1);
+          kafkaMetrics.setMaxKafkaLag(kafkaLag);
+          kafkaMetrics.setMaxKafkaMessagesPerSecond(kafkaMessagesInPerSecond);
+        }
+      }
+    }
+
+
+    return kafkaMetrics;
   }
 
   protected OperatorMetrics gatherOperatorMetric( HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
@@ -152,18 +171,15 @@ public class RequestMetricService {
     long recordsIn = 0;
     long bytesOut = 0;
     long recordsOut = 0;
-    long backPressure;
-    long latency;
+    long backPressure = 0;
+    long latency = 0;
     OperatorMetrics operatorMetrics = new OperatorMetrics();
 
      List<Job> jobsResponse = flinkAPIService.getJobs(client, objectMapper);
     for(Job job: jobsResponse){
       if(job.getState().equals("RUNNING")){
         Job jobInfo = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
-        PrometheusJsonResponse prometheusJsonResponse = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE(job.getJid()),client,objectMapper);
-        PrometheusJsonResponse prometheusJsonResponse1 = prometheusMetricService.executePrometheusQuery(prometheusQuery.getflink_taskmanager_job_latency(job.getJid()),client,objectMapper);
-        backPressure = prometheusJsonResponse.getData().getResult().get(1).getValue().get(1);
-        latency = prometheusJsonResponse1.getData().getResult().get(1).getValue().get(1);
+
         for(int i=0; i < jobInfo.getVertices().size(); i++){
           operatorId = jobInfo.getVertices().get(i).getId();
           operatorName= jobInfo.getVertices().get(i).getName();
@@ -173,6 +189,10 @@ public class RequestMetricService {
           recordsIn = jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getRead_records();
           bytesOut= jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getWrite_bytes();
           recordsOut= jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getWrite_records();
+          PrometheusJsonResponse prometheusJsonResponse = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE(operatorId),client,objectMapper);
+          PrometheusJsonResponse prometheusJsonResponse1 = prometheusMetricService.executePrometheusQuery(prometheusQuery.getflink_taskmanager_job_latency(operatorId),client,objectMapper);
+          backPressure = prometheusJsonResponse.getData().getResult().get(1).getValue().get(1);
+          latency = prometheusJsonResponse1.getData().getResult().get(1).getValue().get(1);
         }
         operatorMetrics.setMaxBackPresure(backPressure);
         operatorMetrics.setMaxLatency(latency);
