@@ -18,7 +18,8 @@ public class ApplicationConfiguration {
     private String flinkport;
 
     private String postgreshost;
-    private String postgresport;
+
+    private int postgresport;
     private String postgresuser;
     private String postgrespw;
     private String postgresdb;
@@ -60,7 +61,7 @@ public class ApplicationConfiguration {
         return postgreshost;
     }
 
-    public String getPostgresport() {
+    public int getPostgresport() {
         return postgresport;
     }
 
@@ -76,5 +77,24 @@ public class ApplicationConfiguration {
         return postgresdb;
     }
 
+    public void setPostgreshost(String postgreshost) {
+        this.postgreshost = postgreshost;
+    }
+
+    public void setPostgresport(int postgresport) {
+        this.postgresport = postgresport;
+    }
+
+    public void setPostgresuser(String postgresuser) {
+        this.postgresuser = postgresuser;
+    }
+
+    public void setPostgrespw(String postgrespw) {
+        this.postgrespw = postgrespw;
+    }
+
+    public void setPostgresdb(String postgresdb) {
+        this.postgresdb = postgresdb;
+    }
 }
 
