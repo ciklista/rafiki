@@ -1,4 +1,4 @@
-package de.tu_berlin.mpds.metric_collector.model.flinkmetric;
+package de.tu_berlin.mpds.metric_collector.model.flinkapi;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
