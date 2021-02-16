@@ -2,6 +2,7 @@ package de.tu_berlin.mpds.metric_collector.service;
 
 import de.tu_berlin.mpds.metric_collector.configuration.ApplicationConfiguration;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Job;
+import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.KafkaMetric;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Operator;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.OperatorMetric;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result;
@@ -106,6 +107,18 @@ public class DatabaseService {
         List<Result> resultsList = new ArrayList<>();
         resultsList.add(results);
         insertResults(resultsList);
+    }
+
+    public void insertKafkaMetric(List<KafkaMetric> kafkaMetricList) throws SQLException {
+        Connection conn = getConnection();
+        for (KafkaMetric result : kafkaMetricList) {
+            String sql = "INSERT INTO experiments.kafka_metrics (experiment_id, max_kafka_lag, mac_kafka_messages_per_second) VALUES (?,?,?);";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, result.getExperimentId());
+            pstmt.setDouble(2, result.getKafkaLag());
+            pstmt.setDouble(3, result.getKafkaMessagesPerSecond());
+            pstmt.executeUpdate();
+        }
     }
 }
 

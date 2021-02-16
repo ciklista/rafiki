@@ -52,11 +52,23 @@ public class PrometheusQuery {
     public URI getQUERY_AVG_LATENCY_BY_TASK (String job_id){
         return build_query( "avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\", job_id = \"" + job_id + "\"})");
     }
-    public URI getQUERY_KAFKA_MESSAGE_IN_PER_SEC(String topic) {
-        String QUERY_KAFKA_MESSAGE_IN_PER_SEC = "sum+by+"+(topic)+"+(rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
-        return build_query(QUERY_KAFKA_MESSAGE_IN_PER_SEC);
+
+    public URI getQUERY_KAFKA_MESSAGE_IN_PER_SEC() {
+        return build_query("sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2s]))");
     }
 
+    public URI getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(String job_Id) {
+        return build_query("sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max{{job_id=\"" + job_Id +"\"}})" );
+    }
+
+
+    //flink_taskmanager_job_task_operator_KafkaConsumer_records_consumed_rate
+
+
+
+
+
+    // keep or remove
     public URI getQUERY_KAFKA_BYTES_IN_PER_SEC(String topic) {
         String QUERY_KAFKA_BYTES_IN_PER_SEC = "sum+by+"+(topic)+"+(rate(kafka_server_brokertopicmetrics_bytesinpersec_count[2m]))";
 
@@ -114,9 +126,7 @@ public class PrometheusQuery {
         return build_query(QUERY_FLINK_JVM_MEMORY_TASKMANAGER_RATIO);
     }
 
-    public URI getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX() {
-        return build_query(QUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX);
-    }
+
 
 
    // public URI getQUERY_BACKPRESSURE_BY_SUBTASK(ZonedDateTime start, ZonedDateTime end, String step) {return build_range_query(QUERY_BACKPRESSURE_BY_SUBTASK, start, end, step);}

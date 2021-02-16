@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Job;
+import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.KafkaMetric;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Operator;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.OperatorMetric;
 import de.tu_berlin.mpds.metric_collector.model.experiments.RunConfiguration;
@@ -76,8 +77,8 @@ public class ExperimentRunner {
         // run experiment + collect metrics
         long experimentStarted = System.currentTimeMillis() / 1000L;
 
-        HashMap<String, OperatorMetric> maxOperatorMetrics = gatherMetrics(experimentDuration, jobId, experimentId, jobVertices);
-
+        HashMap<String, OperatorMetric> maxOperatorMetrics = gatherOperatorMetrics(experimentDuration, jobId, experimentId, jobVertices);
+        HashMap<String, KafkaMetric> maxKafkaMetrics = gatherKafkaMetrics(experimentDuration, jobId, experimentId, jobVertices);
         long experimentStopped = System.currentTimeMillis() / 1000L;
         System.out.println("Experiment done.");
         flinkAPIService.cancelJob(client, objectMapper, jobId);
@@ -95,16 +96,18 @@ public class ExperimentRunner {
         de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result experimentResult = new de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result(experimentId, jobId, experimentStarted, experimentStopped);
 
         List<OperatorMetric> operatorMetricList = new ArrayList<>(maxOperatorMetrics.values());
+        List<KafkaMetric> kafkaMetricList = new ArrayList<>(maxKafkaMetrics.values());
         System.out.println("Sending results to database...");
         databaseService.insertJobs(job);
         databaseService.insertOperators(jobOperators);
         databaseService.insertResults(experimentResult);
         databaseService.insertOperatorMetrics(operatorMetricList);
+        databaseService.insertKafkaMetric(kafkaMetricList);
         System.out.println("...done.");
 
     }
 
-    public HashMap<String, OperatorMetric> gatherMetrics(int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
+    public HashMap<String, OperatorMetric> gatherOperatorMetrics(int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
         HashMap<String, OperatorMetric> maxOperatorMetrics = new HashMap<>();
         StringBuilder parallelismPrintString = new StringBuilder();
         for (JobVertex vertex : vertices) {
@@ -120,31 +123,37 @@ public class ExperimentRunner {
         return maxOperatorMetrics;
     }
 
+    public HashMap<String, KafkaMetric> gatherKafkaMetrics(int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
+        HashMap<String, KafkaMetric> maxKafkaMetrics = new HashMap<>();
+        for (JobVertex vertex : vertices) {
+            maxKafkaMetrics.put(vertex.getId(), new KafkaMetric(experimentId,0,0));
+        }
+        for (long stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(durationSec); stop > System.nanoTime(); ) {
+            updateKafkaMetricsForJob(client, objectMapper, jobId, maxKafkaMetrics);
+        }
+        return maxKafkaMetrics;
+    }
 
-//    protected KafkaMetric gatherKafkaMetric(HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
-//        String operatorId;
-//        KafkaMetric kafkaMetric = new KafkaMetric();
-//        PrometheusJsonResponse FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = null;
-//        PrometheusJsonResponse KAFKA_MESSAGE_IN_PER_SEC = null;
-//        List<Job> jobsResponse = flinkAPIService.getJobs(client, objectMapper);
-//        for (Job job : jobsResponse) {
-//            if (job.getState().equals("RUNNING")) {
-//                Job jobInfo = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
-//                for (int i = 0; i < jobInfo.getVertices().size(); i++) {
-//                    operatorId = jobInfo.getVertices().get(i).getId();
-//                    FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(), client, objectMapper);
-//                    KAFKA_MESSAGE_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(operatorId), client, objectMapper);
-//                    double kafkaLag = FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX.getData().getResult().get(1).getValue().get(1);
-//                    double kafkaMessagesInPerSecond = KAFKA_MESSAGE_IN_PER_SEC.getData().getResult().get(1).getValue().get(1);
-//                    kafkaMetric.setKafkaLag(kafkaLag);
-//                    kafkaMetric.setKafkaMessagesPerSecond(kafkaMessagesInPerSecond);
-//                }
-//            }
-//        }
-//
-//
-//        return kafkaMetric;
-//    }
+    private void updateKafkaMetricsForJob(HttpClient client, ObjectMapper objectMapper, String jobId, HashMap<String, KafkaMetric> kafkaMetrics)
+        throws InterruptedException, ExecutionException, IOException {
+
+        List<Result> kafkaMessages = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(), client, objectMapper).getData().getResult();
+        List<Result> kafkaLag = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(jobId), client, objectMapper).getData().getResult();
+
+        for (Result result : kafkaMessages) {
+            KafkaMetric current_value_Kafka_Messages = kafkaMetrics.get(result.getMetric().getTaskId());
+            if (current_value_Kafka_Messages.getKafkaMessagesPerSecond() < result.getValue().get(1)) {
+                current_value_Kafka_Messages.setKafkaMessagesPerSecond(result.getValue().get(1));
+            }
+        }
+
+        for (Result result : kafkaLag) {
+            KafkaMetric current_value_Kafka_lag = kafkaMetrics.get(result.getMetric().getTaskId());
+            if (current_value_Kafka_lag.getKafkaLag() < result.getValue().get(1)) {
+                current_value_Kafka_lag.setKafkaLag(result.getValue().get(1));
+            }
+        }
+   }
 
     private void updateOperatorMetricsForJob(HttpClient client, ObjectMapper objectMapper, String jobId, HashMap<String, OperatorMetric> operatorMetrics)
             throws InterruptedException, ExecutionException, IOException {
