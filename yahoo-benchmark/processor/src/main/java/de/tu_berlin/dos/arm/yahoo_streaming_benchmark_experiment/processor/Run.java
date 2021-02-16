@@ -118,14 +118,14 @@ public class Run {
 
         // ensure checkpoint interval is supplied as an argument
         if (args.length != 2) {
-            throw new IllegalStateException("Required Command line argument: [CHECKPOINT_INTERVAL] [PARALLELISM_CONFIGURATIONS]");
+            throw new IllegalStateException("Required Command line argument: [PARALLELISM_CONFIGURATIONS] [CHECKPOINT_INTERVAL] ");
         }
-        int interval = Integer.parseInt(args[0]);
+        int interval = Integer.parseInt(args[1]);
 
         // retrieve properties from file
         Properties props = FileReader.GET.read("advertising.properties", Properties.class);
 
-        JSONObject parallelismConfig = new JSONObject(args[1]);
+        JSONObject parallelismConfig = new JSONObject( args[0] );
         String[] requiredParallelismParameters = {
                 props.getProperty("operator.deserializebolt.name"),
                 props.getProperty("operator.eventfilterbolt.name"),

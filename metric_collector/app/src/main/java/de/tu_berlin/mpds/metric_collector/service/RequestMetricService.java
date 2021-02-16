@@ -1,20 +1,20 @@
 package de.tu_berlin.mpds.metric_collector.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.tu_berlin.mpds.metric_collector.model.db.KafkaMetrics;
-import de.tu_berlin.mpds.metric_collector.model.db.OperatorMetrics;
-import de.tu_berlin.mpds.metric_collector.model.flinkapi.Job;
-import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobSubtask;
+import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Job;
+import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Operator;
+import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.OperatorMetric;
+import de.tu_berlin.mpds.metric_collector.model.experiments.RunConfiguration;
+import de.tu_berlin.mpds.metric_collector.model.flinkapi.JarRunResponse;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobVertex;
-import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobsResponse;
-import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.PrometheusJsonResponse;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.Result;
 import de.tu_berlin.mpds.metric_collector.util.FlinkQuery;
+import de.tu_berlin.mpds.metric_collector.util.ParallelismExperimentsPlanner;
 import de.tu_berlin.mpds.metric_collector.util.PrometheusQuery;
 
-import java.math.BigInteger;
-import java.sql.Timestamp;
+import java.sql.SQLException;
 import java.util.List;
 
 import java.util.*;
@@ -23,10 +23,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class RequestMetricService {
@@ -34,7 +34,7 @@ public class RequestMetricService {
 
     private static final HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
     private final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    ;
+
     @Autowired
     private FlinkAPIService flinkAPIService;
     @Autowired
@@ -43,168 +43,160 @@ public class RequestMetricService {
     private PrometheusQuery prometheusQuery;
     @Autowired
     private FlinkQuery flinkQuery;
+    @Autowired
+    private ParallelismExperimentsPlanner experimentPlanner;
+    @Autowired
+    private DatabaseService databaseService;
+
+    public void entrypoint() throws InterruptedException, ExecutionException, IOException, SQLException {
+        // get max parallelism
+        String[] operatorNames = new String[]{"deserializebolt", "EventFilterBolt", "project", "RedisJoinBolt", "CampaignProcessor"};
+
+        List<String> configs = experimentPlanner.getJobArgs(client, objectMapper, operatorNames, 1, "1000");
+
+        for (String jobArg : configs) {
+            // hard coded for now, will be passed through GUI
+            run_experiment("a332a6ce-97c6-4445-9eaa-6059d2d13b2e_processor-1.0-SNAPSHOT.jar", jobArg, 5);
+        }
+    }
+
+    public void run_experiment(String jarID, String programArgs, int experimentDuration) throws InterruptedException, ExecutionException, IOException, SQLException {
+        // start job with given config
+        JarRunResponse response = flinkAPIService.runJar(client, objectMapper, jarID, programArgs, "1");
+        String jobId = response.getJobID();
+        System.out.println("started job: " + jobId);
+        // generate experiment_id
+        String experimentId = UUID.randomUUID().toString();
+
+        de.tu_berlin.mpds.metric_collector.model.flinkapi.Job jobInfo = flinkAPIService.getJobInfo(jobId, client, objectMapper);
+        List<JobVertex> jobVertices = jobInfo.getVertices();
+
+        // run experiment + collect metrics
+        long experimentStarted = System.currentTimeMillis() / 1000L;
+
+        HashMap<String, OperatorMetric> maxOperatorMetrics = gatherMetrics(experimentDuration, jobId, experimentId, jobVertices);
+
+        long experimentStopped = System.currentTimeMillis() / 1000L;
+        System.out.println("Experiment done.");
+        flinkAPIService.cancelJob(client, objectMapper, jobId);
+        System.out.println("Cancelled job.");
 
 
-  // @PostConstruct
-    public void init() throws InterruptedException, ExecutionException, IOException {
-      /*
-    PROCESS:
+        // update db
+        Job job = new Job(jobId, jobInfo.getName());
 
-    get all jobs and their configuration (task_subtasks)
-    initialize {task_subtask: capacity} mapping
-    while True:
-
-      for every job (running or stopped):
-           - get the tasks and their subtasks (parallelism)
-           - find timestamps where task_subtask backpressure > 0.5
-           - for those task_subtasks:
-                - find number of processed messages during that time:
-                  - globally (number of incoming kafka messages) -> capacity of the job
-                  - outgoing messages per task_subtask  -> capacity of one node
-                - update {task_subtask: capacity}
-      if {task_subtask: capacity} has not changed:
-        break
-
-      else:
-        increase load / inject failures
-
-
-
-
-        // STEP 1
-        System.out.println("Initializing the system.");
-        System.out.println("Looking for Jobs (running and stopped)...");
-        List<Job> jobs = flinkAPIService.getJobs(client, objectMapper);
-        System.out.println("Found " + jobs.size() + " job(s):");
-        for (Job job : jobs) {
-            System.out.println("Analyzing data for job " + job.getJid() + ": "
-                    + job.getName() + " (" + job.getState() + ")");
-            Job job_info = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
-            job.setVertices(job_info.getVertices());
-            System.out.println("The job has the following Tasks: ");
-            for (JobVertex task : job_info.getVertices()) {
-                System.out.println("\t- Name: " + task.getName());
-                System.out.println("\t  Parallelism: " + task.getParallelism());
-            }
-            System.out.println("-----------");
+        List<Operator> jobOperators = new ArrayList<>();
+        for (JobVertex vertex : jobVertices) {
+            jobOperators.add(new Operator(vertex.getId(), jobId, vertex.getName(), "", ""));
         }
 
-        // STEP 2
-        System.out.println("Looking for back pressure timestamps...");
-        // query prometheus data
-        System.out.println("Query Prometheus...");
-        Map<String, List<List<Double>>> dbData = prometheusMetricService.getBackpressuredSubTasks(7);
-        System.out.println("Searching detected jobs in Prometheus query results");
-        for (Job job : jobs) {
-            for (JobVertex task : job.getVertices()) {
-                for (JobSubtask subtask : task.getSubtasks()) {
-                    String search_key = job.getJid() + "_" + task.getId() + "_" + subtask.getId();
-                    if (dbData.containsKey(search_key)) {
-                        System.out.println("Found data for Job: " + job.getJid() + ", Task: " + task.getId()
-                                + ", Subtask: " + subtask.getId());
-                        for (List<Double> metric : dbData.get(search_key)) {
-                            Timestamp ts = new Timestamp(metric.get(0).longValue() * 1000);
-                            Date date = new Date(ts.getTime());
-                            System.out.println("\tValue: " + metric.get(1) + " @ " + date);
-                        }
-                        ;
-                    }
-                }
-            }
+        de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result experimentResult = new de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result(experimentId, jobId, experimentStarted, experimentStopped);
 
+        List<OperatorMetric> operatorMetricList = new ArrayList<>(maxOperatorMetrics.values());
+        System.out.println("Sending results to database...");
+        databaseService.insertJobs(job);
+        databaseService.insertOperators(jobOperators);
+        databaseService.insertResults(experimentResult);
+        databaseService.insertOperatorMetrics(operatorMetricList);
+        System.out.println("...done.");
+
+    }
+
+    public HashMap<String, OperatorMetric> gatherMetrics(int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
+        HashMap<String, OperatorMetric> maxOperatorMetrics = new HashMap<>();
+        for (JobVertex vertex : vertices) {
+            maxOperatorMetrics.put(vertex.getId(), new OperatorMetric(experimentId, vertex.getId(), jobId, vertex.getParallelism(), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
         }
-     System.out.println("----------");
-     System.out.println("Finished initialization");
-     System.out.println("----------");
-
-   */
-   }
+        System.out.println("Starting experiment for job: " + jobId);
+        for (long stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(durationSec); stop > System.nanoTime(); ) {
+            updateOperatorMetricsForJob(client, objectMapper, jobId, maxOperatorMetrics);
+        }
+        System.out.println("Finished experiment for job: " + jobId);
+        return maxOperatorMetrics;
+    }
 
     @Scheduled(cron = "0/2 * * * * ?")
-    public void live_run() throws InterruptedException, ExecutionException, IOException {
-
-        System.out.println("---- PROMETHEUS QUERIES -----");
-       KafkaMetrics kafkaMetrics= gatherKafkaMetric(client,objectMapper);
-      System.out.println(kafkaMetrics.toString());
-
+    public void live_run() throws InterruptedException, ExecutionException, IOException, SQLException {
+        entrypoint();
     }
-    private void printQueryResults(List<Result> jobCPUQueryResults, List<Result> jobMemoryQueryResults) {
-        for (int i = 0; i < jobCPUQueryResults.size(); i++) {
-            System.out.println("Pod name: " + jobCPUQueryResults.get(i).getMetric().getKubernetesPodName());
-            System.out.println("Memory load: " + jobMemoryQueryResults.get(i).getValue().get(1));
-            System.out.println("CPU load: " + jobCPUQueryResults.get(i).getValue().get(1));
-            System.out.println("----");
+
+//    protected KafkaMetric gatherKafkaMetric(HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
+//        String operatorId;
+//        KafkaMetric kafkaMetric = new KafkaMetric();
+//        PrometheusJsonResponse FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = null;
+//        PrometheusJsonResponse KAFKA_MESSAGE_IN_PER_SEC = null;
+//        List<Job> jobsResponse = flinkAPIService.getJobs(client, objectMapper);
+//        for (Job job : jobsResponse) {
+//            if (job.getState().equals("RUNNING")) {
+//                Job jobInfo = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
+//                for (int i = 0; i < jobInfo.getVertices().size(); i++) {
+//                    operatorId = jobInfo.getVertices().get(i).getId();
+//                    FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(), client, objectMapper);
+//                    KAFKA_MESSAGE_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(operatorId), client, objectMapper);
+//                    double kafkaLag = FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX.getData().getResult().get(1).getValue().get(1);
+//                    double kafkaMessagesInPerSecond = KAFKA_MESSAGE_IN_PER_SEC.getData().getResult().get(1).getValue().get(1);
+//                    kafkaMetric.setKafkaLag(kafkaLag);
+//                    kafkaMetric.setKafkaMessagesPerSecond(kafkaMessagesInPerSecond);
+//                }
+//            }
+//        }
+//
+//
+//        return kafkaMetric;
+//    }
+
+    private void updateOperatorMetricsForJob(HttpClient client, ObjectMapper objectMapper, String jobId, HashMap<String, OperatorMetric> operatorMetrics)
+            throws InterruptedException, ExecutionException, IOException {
+
+        List<Result> bytesIn = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_BYTES_IN_BY_TASK(jobId), client, objectMapper).getData().getResult();
+        List<Result> bytesOut = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_BYTES_OUT_BY_TASK(jobId), client, objectMapper).getData().getResult();
+        List<Result> messagesIn = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_MESSAGES_IN_BY_TASK(jobId), client, objectMapper).getData().getResult();
+        List<Result> messagesOut = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_MESSAGES_OUT_BY_TASK(jobId), client, objectMapper).getData().getResult();
+        List<Result> backpressure = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_MAX_BACKPRESSURE_BY_TASK(jobId), client, objectMapper).getData().getResult();
+        List<Result> latency = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_AVG_LATENCY_BY_TASK(jobId), client, objectMapper).getData().getResult();
+
+        for (Result result : bytesIn) {
+            OperatorMetric current_value = operatorMetrics.get(result.getMetric().getTaskId());
+            if (current_value.getBytesIn() < result.getValue().get(1)) {
+                current_value.setBytesIn(result.getValue().get(1));
+            }
         }
-    }
 
-  protected KafkaMetrics gatherKafkaMetric(HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
-    String operatorId;
-    KafkaMetrics kafkaMetrics = new KafkaMetrics();
-    PrometheusJsonResponse FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX = null;
-    PrometheusJsonResponse KAFKA_MESSAGE_IN_PER_SEC = null;
-    List<Job> jobsResponse = flinkAPIService.getJobs(client, objectMapper);
-    for(Job job: jobsResponse){
-      if(job.getState().equals("RUNNING")) {
-        Job jobInfo = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
-        for(int i=0; i < jobInfo.getVertices().size(); i++){
-          operatorId = jobInfo.getVertices().get(i).getId();
-           FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX =  prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(), client, objectMapper);
-           KAFKA_MESSAGE_IN_PER_SEC = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_KAFKA_MESSAGE_IN_PER_SEC(operatorId), client, objectMapper);
-          long kafkaLag = FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX.getData().getResult().get(1).getValue().get(1);
-          long kafkaMessagesInPerSecond = KAFKA_MESSAGE_IN_PER_SEC.getData().getResult().get(1).getValue().get(1);
-          kafkaMetrics.setMaxKafkaLag(kafkaLag);
-          kafkaMetrics.setMaxKafkaMessagesPerSecond(kafkaMessagesInPerSecond);
+        for (Result result : bytesOut) {
+            OperatorMetric current_value = operatorMetrics.get(result.getMetric().getTaskId());
+            if (current_value.getBytesOut() < result.getValue().get(1)) {
+                current_value.setBytesOut(result.getValue().get(1));
+            }
         }
-      }
-    }
 
-
-    return kafkaMetrics;
-  }
-
-  protected OperatorMetrics gatherOperatorMetric( HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
-    String operatorId;
-    String operatorCompact = "";
-    String operatorName;
-    int parallelism = 0;
-    long bytesIn = 0;
-    long recordsIn = 0;
-    long bytesOut = 0;
-    long recordsOut = 0;
-    long backPressure = 0;
-    long latency = 0;
-    OperatorMetrics operatorMetrics = new OperatorMetrics();
-
-     List<Job> jobsResponse = flinkAPIService.getJobs(client, objectMapper);
-    for(Job job: jobsResponse){
-      if(job.getState().equals("RUNNING")){
-        Job jobInfo = flinkAPIService.getJobInfo(job.getJid(), client, objectMapper);
-
-        for(int i=0; i < jobInfo.getVertices().size(); i++){
-          operatorId = jobInfo.getVertices().get(i).getId();
-          operatorName= jobInfo.getVertices().get(i).getName();
-          operatorCompact = operatorId+operatorName;
-          parallelism= jobInfo.getVertices().get(i).getParallelism();
-          bytesIn = jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getRead_bytes();
-          recordsIn = jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getRead_records();
-          bytesOut= jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getWrite_bytes();
-          recordsOut= jobInfo.getVertices().get(i).getSubtasks().get(1).getMetrics().getWrite_records();
-          PrometheusJsonResponse prometheusJsonResponse = prometheusMetricService.executePrometheusQuery(prometheusQuery.getQUERY_FLINK_TASKMANAGER_IS_BACK_PRESSURE(operatorId),client,objectMapper);
-          PrometheusJsonResponse prometheusJsonResponse1 = prometheusMetricService.executePrometheusQuery(prometheusQuery.getflink_taskmanager_job_latency(operatorId),client,objectMapper);
-          backPressure = prometheusJsonResponse.getData().getResult().get(1).getValue().get(1);
-          latency = prometheusJsonResponse1.getData().getResult().get(1).getValue().get(1);
+        for (Result result : messagesIn) {
+            OperatorMetric current_value = operatorMetrics.get(result.getMetric().getTaskId());
+            if (current_value.getRecordsIn() < result.getValue().get(1)) {
+                current_value.setRecordsIn(result.getValue().get(1));
+            }
         }
-        operatorMetrics.setMaxBackPresure(backPressure);
-        operatorMetrics.setMaxLatency(latency);
-        operatorMetrics.setOperatorParallelism(parallelism);
-        operatorMetrics.setOperatorId(operatorCompact);
-        operatorMetrics.setMaxBytesIn(bytesIn);
-        operatorMetrics.setMaxBytesOut(bytesOut);
-        operatorMetrics.setMaxRecordsIn(recordsIn);
-        operatorMetrics.setMaxRecordsOut(recordsOut);
-      }
+
+        for (Result result : messagesOut) {
+            OperatorMetric current_value = operatorMetrics.get(result.getMetric().getTaskId());
+            if (current_value.getRecordsOut() < result.getValue().get(1)) {
+                current_value.setRecordsOut(result.getValue().get(1));
+            }
+        }
+
+        for (Result result : backpressure) {
+            OperatorMetric current_value = operatorMetrics.get(result.getMetric().getTaskId());
+            if (current_value.getBackPresure() < result.getValue().get(1)) {
+                current_value.setBackPresure(result.getValue().get(1));
+            }
+        }
+
+        for (Result result : latency) {
+            OperatorMetric current_value = operatorMetrics.get(result.getMetric().getOperatorId());
+            if (current_value.getLatency() < result.getValue().get(1)) {
+                current_value.setLatency(result.getValue().get(1));
+            }
+        }
+
     }
-    return operatorMetrics;
-  }
 
 }

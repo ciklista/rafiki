@@ -29,6 +29,7 @@ public class Metric {
   private String podTemplateHash;
   private String tmId;
   private String subtaskIndex;
+  private String operatorId;
 
   @JsonCreator
   public Metric(@JsonProperty("__name__") String name,@JsonProperty("app") String app, @JsonProperty("component") String component,
@@ -36,7 +37,7 @@ public class Metric {
                 @JsonProperty("kubernetes_namespace") String kubernetesNamespace,@JsonProperty("kubernetes_pod_name") String kubernetesPodName,
                 @JsonProperty("pod_template_hash") String podTemplateHash,@JsonProperty("tm_id") String tmId,
                 @JsonProperty("task_id") String task_id, @JsonProperty("subtask_index") String subtaskIndex,
-                @JsonProperty("job_id") String jobId) {
+                @JsonProperty("job_id") String jobId,@JsonProperty("operator_id") String operatorId ) {
     this.name = name;
     this.app = app;
     this.component = component;
@@ -50,5 +51,6 @@ public class Metric {
     this.taskId = task_id;
     this.subtaskIndex = subtaskIndex;
     this.jobId = jobId;
+    this.operatorId = operatorId;
   }
 }

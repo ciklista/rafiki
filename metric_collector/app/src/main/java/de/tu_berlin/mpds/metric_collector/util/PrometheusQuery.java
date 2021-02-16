@@ -29,7 +29,29 @@ public class PrometheusQuery {
 
     private String QUERY_MAX_FLINK_TASKMANAGER_JOB_TASK_NUMRECORDSOUTPERSECOND = "max+by+(task_id)+(flink_taskmanager_job_task_numRecordsOutPerSecond)";
 
+    public URI getQUERY_BYTES_IN_BY_TASK(String job_id) {
+        return build_query( "sum by (job_id, task_id) (flink_taskmanager_job_task_numBytesInPerSecond {job_id = \"" + job_id + "\"})");
+    }
 
+    public URI getQUERY_BYTES_OUT_BY_TASK(String job_id) {
+        return build_query( "sum by (job_id, task_id) (flink_taskmanager_job_task_numBytesOutPerSecond {job_id = \"" + job_id + "\"})");
+    }
+
+    public URI getQUERY_MESSAGES_IN_BY_TASK(String job_id) {
+        return build_query( "sum by (job_id, task_id) (flink_taskmanager_job_task_numRecordsInPerSecond {job_id = \"" + job_id + "\"})");
+    }
+
+    public URI getQUERY_MESSAGES_OUT_BY_TASK(String job_id) {
+        return build_query( "sum by (job_id, task_id) (flink_taskmanager_job_task_numRecordsOutPerSecond {job_id = \"" + job_id + "\"})");
+    }
+
+    public URI getQUERY_MAX_BACKPRESSURE_BY_TASK (String job_id){
+        return build_query( "max by (job_id, task_id) (flink_taskmanager_job_task_isBackPressured {job_id = \"" + job_id + "\"})");
+    }
+
+    public URI getQUERY_AVG_LATENCY_BY_TASK (String job_id){
+        return build_query( "avg by (operator_id) (flink_taskmanager_job_latency_source_id_operator_id_operator_subtask_index_latency{quantile=\"0.95\", job_id = \"" + job_id + "\"})");
+    }
     public URI getQUERY_KAFKA_MESSAGE_IN_PER_SEC(String topic) {
         String QUERY_KAFKA_MESSAGE_IN_PER_SEC = "sum+by+"+(topic)+"+(rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2m]))";
         return build_query(QUERY_KAFKA_MESSAGE_IN_PER_SEC);

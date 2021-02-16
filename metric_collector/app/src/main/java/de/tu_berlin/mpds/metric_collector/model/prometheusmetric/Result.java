@@ -18,10 +18,10 @@ public class Result {
 
 
     private Metric metric;
-    private List<Long> value;
+    private List<Double> value;
 
     @JsonCreator
-    public Result(@JsonProperty("metric") Metric metric, @JsonProperty("value") List<Long> value) {
+    public Result(@JsonProperty("metric") Metric metric, @JsonProperty("value") List<Double> value) {
         this.metric = metric;
         this.value = value;
     }
