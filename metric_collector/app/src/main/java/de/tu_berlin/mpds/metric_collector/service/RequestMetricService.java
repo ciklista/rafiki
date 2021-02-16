@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +49,7 @@ public class RequestMetricService {
     @Autowired
     private DatabaseService databaseService;
 
+    @Bean
     public void entrypoint() throws InterruptedException, ExecutionException, IOException, SQLException {
         // get max parallelism
         String[] operatorNames = new String[]{"deserializebolt", "EventFilterBolt", "project", "RedisJoinBolt", "CampaignProcessor"};
@@ -114,11 +116,7 @@ public class RequestMetricService {
         System.out.println("Finished experiment for job: " + jobId);
         return maxOperatorMetrics;
     }
-
-    @Scheduled(cron = "0/2 * * * * ?")
-    public void live_run() throws InterruptedException, ExecutionException, IOException, SQLException {
-        entrypoint();
-    }
+    
 
 //    protected KafkaMetric gatherKafkaMetric(HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
 //        String operatorId;
