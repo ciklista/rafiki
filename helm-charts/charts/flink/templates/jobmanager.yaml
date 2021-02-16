@@ -22,7 +22,7 @@ spec:
         image: {{ .Values.image }}
         workingDir: /opt/flink
         resources:
-{{ toYaml .Values.taskmanager.resources | indent 12 }}
+{{ toYaml .Values.jobmanager.resources | indent 12 }}
         command: ["/bin/bash", "-c", "$FLINK_HOME/bin/jobmanager.sh start;\
           while :;
           do
