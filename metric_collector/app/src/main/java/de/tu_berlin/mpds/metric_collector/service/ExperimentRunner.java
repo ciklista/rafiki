@@ -30,7 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class RequestMetricService {
+public class ExperimentRunner {
 
 
     private static final HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
