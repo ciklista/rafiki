@@ -58,7 +58,7 @@ public class RequestMetricService {
 
         for (String jobArg : configs) {
             // hard coded for now, will be passed through GUI
-            run_experiment("a332a6ce-97c6-4445-9eaa-6059d2d13b2e_processor-1.0-SNAPSHOT.jar", jobArg, 5);
+            run_experiment("29b1cf4b-7322-4e89-9a55-6b8ab0227caa_processor-1.0-SNAPSHOT.jar", jobArg, 5);
         }
     }
 
@@ -106,17 +106,20 @@ public class RequestMetricService {
 
     public HashMap<String, OperatorMetric> gatherMetrics(int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
         HashMap<String, OperatorMetric> maxOperatorMetrics = new HashMap<>();
+        StringBuilder parallelismPrintString = new StringBuilder();
         for (JobVertex vertex : vertices) {
             maxOperatorMetrics.put(vertex.getId(), new OperatorMetric(experimentId, vertex.getId(), jobId, vertex.getParallelism(), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
+            parallelismPrintString.append("\t").append(vertex.getName()).append(" - Parallelism: ").append(vertex.getParallelism()).append("\n");
         }
-        System.out.println("Starting experiment for job: " + jobId);
+        System.out.println("Starting experiment for job " + jobId +  " with the following parallelism config:");
+        System.out.println(parallelismPrintString);
         for (long stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(durationSec); stop > System.nanoTime(); ) {
             updateOperatorMetricsForJob(client, objectMapper, jobId, maxOperatorMetrics);
         }
         System.out.println("Finished experiment for job: " + jobId);
         return maxOperatorMetrics;
     }
-    
+
 
 //    protected KafkaMetric gatherKafkaMetric(HttpClient client, ObjectMapper objectMapper) throws InterruptedException, ExecutionException, IOException {
 //        String operatorId;
