@@ -10,6 +10,7 @@ import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.OperatorMetric;
 import de.tu_berlin.mpds.metric_collector.model.experiments.RunConfiguration;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.JarRunResponse;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobVertex;
+import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.PrometheusJsonResponse;
 import de.tu_berlin.mpds.metric_collector.model.prometheusmetric.Result;
 import de.tu_berlin.mpds.metric_collector.util.FlinkQuery;
 import de.tu_berlin.mpds.metric_collector.util.ParallelismExperimentsPlanner;
@@ -59,7 +60,7 @@ public class ExperimentRunner {
 
         for (String jobArg : configs) {
             // hard coded for now, will be passed through GUI
-            run_experiment("29b1cf4b-7322-4e89-9a55-6b8ab0227caa_processor-1.0-SNAPSHOT.jar", jobArg, 5);
+            run_experiment("d3792ead-25b8-4715-8c04-b4f671d0b3c2_processor-1.0-SNAPSHOT.jar", jobArg, 120);
         }
     }
 
@@ -68,6 +69,9 @@ public class ExperimentRunner {
         JarRunResponse response = flinkAPIService.runJar(client, objectMapper, jarID, programArgs, "1");
         String jobId = response.getJobID();
         System.out.println("started job: " + jobId);
+        System.out.println("Waiting 30 seconds for the job to settle in");
+        Thread.sleep(15*1000);
+
         // generate experiment_id
         String experimentId = UUID.randomUUID().toString();
 
@@ -78,7 +82,7 @@ public class ExperimentRunner {
         long experimentStarted = System.currentTimeMillis() / 1000L;
 
         HashMap<String, OperatorMetric> maxOperatorMetrics = gatherOperatorMetrics(experimentDuration, jobId, experimentId, jobVertices);
-        HashMap<String, KafkaMetric> maxKafkaMetrics = gatherKafkaMetrics(experimentDuration, jobId, experimentId, jobVertices);
+        // HashMap<String, KafkaMetric> maxKafkaMetrics = gatherKafkaMetrics(experimentDuration, jobId, experimentId, jobVertices);
         long experimentStopped = System.currentTimeMillis() / 1000L;
         System.out.println("Experiment done.");
         flinkAPIService.cancelJob(client, objectMapper, jobId);
@@ -96,13 +100,13 @@ public class ExperimentRunner {
         de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result experimentResult = new de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result(experimentId, jobId, experimentStarted, experimentStopped);
 
         List<OperatorMetric> operatorMetricList = new ArrayList<>(maxOperatorMetrics.values());
-        List<KafkaMetric> kafkaMetricList = new ArrayList<>(maxKafkaMetrics.values());
+        // List<KafkaMetric> kafkaMetricList = new ArrayList<>(maxKafkaMetrics.values());
         System.out.println("Sending results to database...");
         databaseService.insertJobs(job);
         databaseService.insertOperators(jobOperators);
         databaseService.insertResults(experimentResult);
         databaseService.insertOperatorMetrics(operatorMetricList);
-        databaseService.insertKafkaMetric(kafkaMetricList);
+        //databaseService.insertKafkaMetric(kafkaMetricList);
         System.out.println("...done.");
 
     }

@@ -54,11 +54,11 @@ public class PrometheusQuery {
     }
 
     public URI getQUERY_KAFKA_MESSAGE_IN_PER_SEC() {
-        return build_query("sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesinpersec_count[2s]))");
+        return build_query("sum by (topic) (kafka_server_brokertopicmetrics_messagesinpersec_count{topic=\"ad-events\"})");
     }
 
     public URI getQUERY_FLINK_TASKMANAGER_KAFKACONSUMER_RECORD_LAG_MAX(String job_Id) {
-        return build_query("sum(flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max{{job_id=\"" + job_Id +"\"}})" );
+        return build_query("sum by (operator_id) (flink_taskmanager_job_task_operator_KafkaConsumer_records_lag_max{job_id=\"" + job_Id +"\"})" );
     }
 
 
