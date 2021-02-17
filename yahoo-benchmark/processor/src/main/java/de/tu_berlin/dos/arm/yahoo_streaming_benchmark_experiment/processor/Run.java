@@ -168,14 +168,13 @@ public class Run {
 
         // enable externalized checkpoints which are deleted after job cancellation
         env.getCheckpointConfig().enableExternalizedCheckpoints(ExternalizedCheckpointCleanup.DELETE_ON_CANCELLATION);
-
         // allow job recovery fallback to checkpoint when there is a more recent savepoint
         env.getCheckpointConfig().setPreferCheckpointForRecovery(true);
 
         // setup Kafka consumer
         Properties kafkaConsumerProps = new Properties();
         kafkaConsumerProps.setProperty("bootstrap.servers", props.getProperty("kafka.brokers")); // Broker default host:port
-        kafkaConsumerProps.setProperty("group.id", props.getProperty("kafka.consumer.group"));   // Consumer group ID
+        // kafkaConsumerProps.setProperty("group.id", props.getProperty("kafka.consumer.group"));   // Consumer group ID
         kafkaConsumerProps.setProperty("auto.offset.reset", "earliest");                         // Always read topic from start
 
         FlinkKafkaConsumer<AdEvent> myConsumer =
