@@ -3,6 +3,7 @@ import Server from '../models/Server';
 import React, { useEffect, useState } from 'react';
 import './Home.css';
 import { Link } from 'react-router-dom';
+import AddJob from '../AddJob';
 
 export default function Home() {
 
@@ -15,6 +16,7 @@ export default function Home() {
 
     return (
         <div className="content">
+            <AddJob></AddJob>
             {servers.map((server: Server) =>
                 <Link to={`/server/${server.id}`} className={`server status-${server.status}`} key={server.id}>
                     <div>{server.name}</div>

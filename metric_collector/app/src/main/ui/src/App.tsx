@@ -7,7 +7,7 @@ import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 function App() {
   return (
-    <div className="App">
+    <div className="bg-gray-100 min-h-screen flex flex-col">
       <Router>
         <Header />
         <Switch>
