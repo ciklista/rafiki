@@ -20,7 +20,7 @@ Deploy a 3 node Kubernetes cluster with the e2-standard-4 machine-type with:
 ```
 gcloud container clusters create mpds-cluster --num-nodes=3  \
   --image-type "UBUNTU" --no-enable-basic-auth  --no-enable-autoupgrade \
-  --cluster-version "1.17.14-gke.1600" --machine-type e2-standard-4
+  --machine-type e2-standard-4
 ```
 
 After the Kubernetes cluster has been created, configure kubectl with:
