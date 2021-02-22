@@ -81,6 +81,14 @@ public class FlinkAPIService {
         return jarRunResponse;
     }
 
+    public void cancelJob(HttpClient client, ObjectMapper objectMapper, String jobId) throws ExecutionException, InterruptedException, JsonProcessingException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getFLINK_JOB(jobId)))
+                .method("PATCH",  HttpRequest.BodyPublishers.noBody())
+                .build();
+        CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+        response.get();
+    }
+
     public JobPlan getJobPlan(HttpClient client, ObjectMapper objectMapper, String jarID, String programArgs) throws ExecutionException, InterruptedException, JsonProcessingException {
         JSONObject configuration = new JSONObject();
         configuration.put("programArgs", programArgs);

@@ -37,6 +37,9 @@ public class FlinkQuery {
     return getBASE_URL_FLINK() + FLINK_JOBS + job_id + "/vertices/" + vertexId;
   }
 
+  public String getFLINK_JOB(String jobId) {
+    return getBASE_URL_FLINK() + FLINK_JOBS + jobId;
+  }
   public String getFLINK_TASKMANAGERS() { return getBASE_URL_FLINK() + FLINK_TASKMANAGERS; }
 
   public String getFLINK_JARS_UPLOAD() { return getBASE_URL_FLINK() + FLINK_JARS_UPLOAD; }

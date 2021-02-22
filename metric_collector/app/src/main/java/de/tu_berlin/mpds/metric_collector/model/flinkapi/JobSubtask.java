@@ -12,15 +12,15 @@ import lombok.ToString;
 @ToString
 public class JobSubtask {
 
-    private String id;
+    private String subtaskId;
     private String status;
     private JobVertexMetric metrics;
 
 
-    public JobSubtask(@JsonProperty("subtask") String id, @JsonProperty("status") String status,
-                      @JsonProperty("metrics") JobVertexMetric metrics) {
+    public JobSubtask(@JsonProperty("subtask") String id, @JsonProperty("status") String status,@JsonProperty("metrics") JobVertexMetric metrics
+                      ) {
         this.status = status;
-        this.id = id;
+        this.subtaskId= id;
         this.metrics = metrics;
     }
 }

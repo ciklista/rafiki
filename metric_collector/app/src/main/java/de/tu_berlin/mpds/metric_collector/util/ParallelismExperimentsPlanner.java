@@ -6,10 +6,12 @@ import de.tu_berlin.mpds.metric_collector.model.experiments.RunConfiguration;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.JobPlan;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.TaskManager;
 import de.tu_berlin.mpds.metric_collector.service.FlinkAPIService;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.http.HttpClient;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -28,30 +30,23 @@ public class ParallelismExperimentsPlanner {
         for (TaskManager taskManager : taskManagers) {
             maxParallelism += taskManager.getSlotsNumber();
         }
-        return  maxParallelism;
+        return maxParallelism;
     }
 
-    public List<RunConfiguration> getExperimentConfigurations(HttpClient client, ObjectMapper objectMapper, String jarID) throws ExecutionException, InterruptedException, JsonProcessingException {
+    public List<String> getJobArgs(HttpClient client, ObjectMapper objectMapper, String[] operatorNames, int testingParallelism, String otherArgs) throws ExecutionException, InterruptedException, JsonProcessingException {
         int maxParallelism = this.getMaxParallelism(client, objectMapper);
-        JobPlan jobPlan = flinkAPIService.getJobPlan(client, objectMapper, jarID, "5000");
-        int nodeToTest = 0;
-        int numberOfNodes = jobPlan.getJobPlanNodes().length;
-        List<RunConfiguration> runConfigurations = new LinkedList<>();
-
-        for (int i = 0; i<numberOfNodes; i++) {
-            List<Integer> configuration = new LinkedList<>();
-
-            for (int j = 0; j<numberOfNodes; j++) {
-                if (j == nodeToTest) {
-                    configuration.add(1);
+        List<String> configs = new ArrayList<>();
+        for (int i = 0; i < operatorNames.length; i++) {
+            JSONObject parallelismConfiguration = new JSONObject();
+            for (int j = 0; j < operatorNames.length; j++) {
+                if (j == i) {
+                    parallelismConfiguration.put(operatorNames[j], testingParallelism);
                 } else {
-                    configuration.add(maxParallelism);
+                    parallelismConfiguration.put(operatorNames[j], maxParallelism);
                 }
             }
-            runConfigurations.add(new RunConfiguration(configuration));
-            nodeToTest++;
+            configs.add(parallelismConfiguration.toJSONString() + " " + otherArgs);
         }
-
-        return runConfigurations;
+        return configs;
     }
 }
