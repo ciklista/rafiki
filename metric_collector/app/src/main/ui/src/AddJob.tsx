@@ -13,17 +13,26 @@ export default function AddJob() {
     const [ip, setIp] = useState('');
     const [jar, setJar] = useState<File>();
     function handleClose() {
-        console.log(jar);
 
-        axios.post(ip + '/jars/upload', {
-            jarfile: jar
-        }, {
-            headers: {
-                'content-type': 'multipart/form-data'
-            }
-        });
+        jar?.arrayBuffer().then(buffer => {
+            const blob = new Blob([buffer], { type: jar.type });
+            let fd = new FormData();
+            console.log(jar instanceof Blob);
 
-        setShowForm(() => false)
+            fd.append('jarfile', blob, jar.name);
+
+            axios.post(ip + '/jars/upload',
+                fd
+                , {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            );
+
+            setShowForm(() => false)
+        }
+        );
     }
 
     return (
