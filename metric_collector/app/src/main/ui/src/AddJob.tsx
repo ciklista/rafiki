@@ -28,7 +28,7 @@ export default function AddJob() {
                         'Content-Type': 'multipart/form-data'
                     }
                 }
-            );
+            ).then(r => console.log(r));
 
             setShowForm(() => false)
         }
