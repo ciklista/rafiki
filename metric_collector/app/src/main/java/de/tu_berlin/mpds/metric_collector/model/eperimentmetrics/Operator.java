@@ -16,7 +16,6 @@ public class Operator implements Serializable {
   private String operatorId;
   private String jobId;
   private String taskName;
-  private String precedingOperatorId;
-  private String succeedingOperatorId;
+  private int operatorPosition;
 
 }

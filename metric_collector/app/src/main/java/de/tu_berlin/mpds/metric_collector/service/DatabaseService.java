@@ -48,13 +48,12 @@ public class DatabaseService {
     public void insertOperators(List<Operator> operators) throws SQLException {
         Connection conn = getConnection();
         for (Operator operator : operators) {
-            String sql = "INSERT INTO experiments.operators (operator_id,job_id, task_name, preceding_operator_id, succeeding_operator_id) VALUES (?,?,?,?,?);";
+            String sql = "INSERT INTO experiments.operators (operator_id,job_id, task_name, operatorPosition) VALUES (?,?,?,?);";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, operator.getOperatorId());
             pstmt.setString(2, operator.getJobId());
             pstmt.setString(3, operator.getTaskName());
-            pstmt.setString(4, operator.getPrecedingOperatorId());
-            pstmt.setString(5, operator.getSucceedingOperatorId());
+            pstmt.setInt(4, operator.getOperatorPosition());
             pstmt.executeUpdate();
         }
     }

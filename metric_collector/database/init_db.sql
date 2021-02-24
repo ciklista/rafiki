@@ -12,8 +12,7 @@ CREATE TABLE IF NOT EXISTS experiments.operators
     operator_id            TEXT, -- is task id
     job_id                 TEXT,
     task_name              TEXT,
-    preceding_operator_id  TEXT,
-    succeeding_operator_id TEXT,
+    operator_position      INT,
     PRIMARY KEY (operator_id, job_id),
     FOREIGN KEY (job_id) REFERENCES experiments.jobs (job_id)
 
