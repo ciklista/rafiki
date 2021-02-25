@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: flink-jobmanager-rest
+  name: {{ .Values.clusterid }}-nodeport-rest
 spec:
   type: NodePort
   ports:
@@ -12,5 +12,5 @@ spec:
     nodePort: {{ .Values.nodePort }}
     {{- end }}
   selector:
-    app: flink
+    app: {{ .Values.clusterid }}
     component: jobmanager

@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bootstrap-flink-native
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: flink
+        image: {{ .Values.image }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["/bin/bash", "-c", "$FLINK_HOME/bin/kubernetes-session.sh \
+        -Dkubernetes.cluster-id={{ .Values.clusterid }} \
+        -Dkubernetes.namespace={{ .Release.Namespace }} \
+        -Dkubernetes.container.image={{ .Values.image }} \
+        -Dkubernetes.rest-service.exposed.type=ClusterIP \
+        -Dkubernetes.service-account=default \
+        -Dkubernetes.jobmanager.annotations={{ .Values.jobmanager.annotations }} \
+        -Dkubernetes.jobmanager.labels={{ .Values.jobmanager.labels }} \
+        -Dkubernetes.taskmanager.annotations={{ .Values.taskmanager.annotations }} \
+        -Dkubernetes.taskmanager.labels={{ .Values.taskmanager.labels }} \
+        -Dmetrics.latency.granularity=operator \
+        -Dmetrics.latency.interval=1000 \
+        -Dmetrics.reporters=prom \
+        -Dmetrics.reporter.prom.class=org.apache.flink.metrics.prometheus.PrometheusReporter \
+        -Dmetrics.reporter.prom.port=9999 \
+        {{- if .Values.highAvailability.enabled }}
+        -Dhigh-availability=org.apache.flink.kubernetes.highavailability.KubernetesHaServicesFactory \
+        -Dhigh-availability.storageDir={{ .Values.highAvailability.storageDir }}
+        {{- end }}
+        "]
