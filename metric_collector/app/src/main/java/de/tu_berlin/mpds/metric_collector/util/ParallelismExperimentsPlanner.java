@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.http.HttpClient;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -33,20 +34,33 @@ public class ParallelismExperimentsPlanner {
         return maxParallelism;
     }
 
-    public List<String> getJobArgs(HttpClient client, ObjectMapper objectMapper, String[] operatorNames, int testingParallelism, String otherArgs) throws ExecutionException, InterruptedException, JsonProcessingException {
-        int maxParallelism = this.getMaxParallelism(client, objectMapper);
-        List<String> configs = new ArrayList<>();
-        for (int i = 0; i < operatorNames.length; i++) {
-            JSONObject parallelismConfiguration = new JSONObject();
-            for (int j = 0; j < operatorNames.length; j++) {
-                if (j == i) {
-                    parallelismConfiguration.put(operatorNames[j], testingParallelism);
-                } else {
-                    parallelismConfiguration.put(operatorNames[j], maxParallelism);
-                }
-            }
-            configs.add(parallelismConfiguration.toJSONString() + " " + otherArgs);
+    public String getNextJobArgs(int maxParallelism, String[] operatorNames, int[] previousParallelismConfig, int lastBackpressureOperator, String otherArgs) {
+        if (previousParallelismConfig == null) {
+            int[] array = new int[operatorNames.length];
+            Arrays.fill(array, 1);
+            return createArgString(generateArgJson(operatorNames, array), otherArgs);
         }
-        return configs;
+        else if (lastBackpressureOperator == -1){
+            previousParallelismConfig[0] += 1;
+            return createArgString(generateArgJson(operatorNames, previousParallelismConfig), otherArgs);
+        }
+        else {
+            previousParallelismConfig[lastBackpressureOperator +1] += 1;
+            return createArgString(generateArgJson(operatorNames, previousParallelismConfig), otherArgs);
+        }
+
     }
+
+    private JSONObject generateArgJson(String[] operatorNames, int[] parallelism) {
+        JSONObject parallelismConfiguration = new JSONObject();
+        for (int j = 0; j < operatorNames.length; j++) {
+            parallelismConfiguration.put(operatorNames[j], parallelism[j]);
+        }
+        return parallelismConfiguration;
+    }
+
+    private String createArgString(JSONObject operatorConfig, String otherArgs) {
+        return operatorConfig.toJSONString() + " " + otherArgs;
+    }
+
 }

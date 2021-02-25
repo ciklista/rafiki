@@ -16,8 +16,9 @@ public class JobVertex {
 
     private String id;
     private String name;
-    private Integer parallelism;
+    private int parallelism;
     private String status;
+    private int taskPosition;
     private List<JobSubtask> subtasks;
 
 

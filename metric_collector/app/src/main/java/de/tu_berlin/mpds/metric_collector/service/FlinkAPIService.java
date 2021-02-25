@@ -39,14 +39,10 @@ public class FlinkAPIService {
         HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getFLINK_JOBS() + jId)).GET().build();
         CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         Job job = objectMapper.readValue(response.get().body(), Job.class);
-        // append subTask information
-        List<JobVertex> verticesWithSubtasks =  new ArrayList<>();
-        for (JobVertex vertex : job.getVertices()) {
-            request = HttpRequest.newBuilder(URI.create(flinkQuery.getFLINK_SUBTASK_INFORMATION(job.getJid(), vertex.getId()))).GET().build();
-            response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-            verticesWithSubtasks.add(objectMapper.readValue(response.get().body(), JobVertex.class));
+        for (int i = 0; i < job.getVertices().size(); i++){
+            job.getVertices().get(i).setTaskPosition(i);
         }
-        job.setVertices(verticesWithSubtasks);
+
         return job;
     }
     public List<TaskManager> getTaskManagers(HttpClient client, ObjectMapper objectMapper) throws ExecutionException, InterruptedException, JsonProcessingException {
