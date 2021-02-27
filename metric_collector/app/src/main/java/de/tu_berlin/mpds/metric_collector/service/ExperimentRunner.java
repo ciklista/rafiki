@@ -56,14 +56,12 @@ public class ExperimentRunner {
     private DatabaseService databaseService;
 
 
-    public void entrypoint(String[] operators,String appJarId, int maximumParallelism) throws InterruptedException, ExecutionException, IOException, SQLException {
-       // String[] operatorNames = new String[]{"deserializebolt", "EventFilterBolt", "project", "RedisJoinBolt", "CampaignProcessor"};
+    public void start(String[] operators,String appJarId, int maximumParallelism) throws InterruptedException, ExecutionException, IOException, SQLException {
         String[] operatorNames = operators;
         int maxParallelism = maximumParallelism;
         int lastBackpressuredOperator = -1;
         int[] operatorConfig = null;
         boolean nextExperiment = true;
-        //String jarId = "0bcf1e43-da57-460f-bd0c-3789e26f065d_processor-1.0-SNAPSHOT.jar";
         String jarId = appJarId;
         while (nextExperiment) {
             String jobArg = experimentPlanner.getNextJobArgs(operatorNames, operatorConfig, lastBackpressuredOperator, "1000");
@@ -167,7 +165,7 @@ public class ExperimentRunner {
     }
 
     private void updateOperatorMetricsForJob(HttpClient client, ObjectMapper objectMapper, String jobId, HashMap<String, OperatorMetric> operatorMetrics)
-            throws InterruptedException, ExecutionException, IOException {
+        throws InterruptedException, ExecutionException, IOException {
 
         List<Result> bytesIn = prometheusMetricService.executePrometheusQuery(prometheusQuery.getBytesInByTask(jobId), client, objectMapper).getData().getResult();
         List<Result> bytesOut = prometheusMetricService.executePrometheusQuery(prometheusQuery.getBytesOutByTask(jobId), client, objectMapper).getData().getResult();

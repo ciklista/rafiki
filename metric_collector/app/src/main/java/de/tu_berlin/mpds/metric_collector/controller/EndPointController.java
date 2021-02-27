@@ -29,7 +29,7 @@ public class EndPointController {
                                            @RequestParam(value = "jarid") String jarId,@RequestParam(value = "max") int maxParallelism
                                            ) throws  InterruptedException, ExecutionException, SQLException, IOException {
 
-    experimentRunner.entrypoint(operators, jarId, maxParallelism);
+    experimentRunner.start(operators, jarId, maxParallelism);
     return ResponseEntity.status(HttpStatus.OK).build();
   }
 
