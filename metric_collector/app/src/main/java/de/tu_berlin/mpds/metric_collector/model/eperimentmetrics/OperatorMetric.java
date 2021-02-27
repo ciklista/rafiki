@@ -21,7 +21,8 @@ public class OperatorMetric implements Serializable {
   private double recordsOut;
   private double bytesIn;
   private double bytesOut;
-  private double latency;
+  private double maxLatency;
+  private double minLatency;
   private double backPresure;
 
 }
