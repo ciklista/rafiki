@@ -58,7 +58,7 @@ public class ExperimentRunner {
     @Bean
     public void entrypoint() throws InterruptedException, ExecutionException, IOException, SQLException {
         String[] operatorNames = new String[]{"deserializebolt", "EventFilterBolt", "project", "RedisJoinBolt", "CampaignProcessor"};
-        int maxParallelism = 7;
+        int maxParallelism = 5;
         int lastBackpressuredOperator = -1;
         int[] operatorConfig = null;
         boolean nextExperiment = true;
@@ -72,6 +72,7 @@ public class ExperimentRunner {
             lastBackpressuredOperator = result.getLastBackpressuredOperator();
 
             if (operatorConfig[lastBackpressuredOperator + 1] == maxParallelism) {
+                System.out.println("Reached maximum parallelism on the task that is the current bottleneck or on the source task. Aborting.");
                 nextExperiment = false;
             }
         }
