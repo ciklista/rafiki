@@ -16,8 +16,9 @@ public class JobVertex {
 
     private String id;
     private String name;
-    private Integer parallelism;
+    private int parallelism;
     private String status;
+    private int taskPosition;
     private List<JobSubtask> subtasks;
 
 
@@ -27,5 +28,6 @@ public class JobVertex {
         this.id = id;
         this.name = name;
         this.parallelism = parallelism;
+
     }
 }

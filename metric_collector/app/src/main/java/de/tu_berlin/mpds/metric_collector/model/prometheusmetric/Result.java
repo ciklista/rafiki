@@ -1,6 +1,7 @@
 package de.tu_berlin.mpds.metric_collector.model.prometheusmetric;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
@@ -17,13 +18,11 @@ public class Result {
 
 
     private Metric metric;
-    private List<Object> value;
-    private List<List<Object>> values;
+    private List<Double> value;
 
-    public Result(@JsonProperty("metric") Metric metric, @JsonProperty("value") List<Object> value,
-                  @JsonProperty("values") List<List<Object>> values) {
+    @JsonCreator
+    public Result(@JsonProperty("metric") Metric metric, @JsonProperty("value") List<Double> value) {
         this.metric = metric;
         this.value = value;
-        this.values = values;
     }
 }

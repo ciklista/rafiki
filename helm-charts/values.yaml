@@ -3,18 +3,14 @@
 # Variables will overwrite values in each subchart's values.yaml
 
 #######################################
-## Global variables for the flink chart
+## Global variables for the flink native kubernetes chart
 flink:
   ## boolean to enable/disable chart
   enabled: true
 
-  ## configure number of deployed jobmanagers
-  jobmanager:
-    replicas: 1
-
-  ## configure number of deployed taskmanagers
-  taskmanager:
-    replicas: 3
+  ## The cluster-id is used for identifying a unique Flink cluster.
+  ## The id must only contain lowercase alphanumeric characters and "-".
+  clusterid: "flink-native"
 
   ## configure the NodePort for external access
   ## will be configured automatically if left empty

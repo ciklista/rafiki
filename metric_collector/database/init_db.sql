@@ -2,19 +2,18 @@ CREATE SCHEMA IF NOT EXISTS experiments;
 
 CREATE TABLE IF NOT EXISTS experiments.jobs
 (
-    job_id   INT,
+    job_id   TEXT,
     job_name TEXT,
     PRIMARY KEY (job_id)
 );
 
 CREATE TABLE IF NOT EXISTS experiments.operators
 (
-    operator_id            INT, -- is task id
-    job_id                 INT,
+    operator_id            TEXT, -- is task id
+    job_id                 TEXT,
     task_name              TEXT,
-    preceding_operator_id  INT,
-    succeeding_operator_id INT,
-    PRIMARY KEY (operator_id),
+    operator_position      INT,
+    PRIMARY KEY (operator_id, job_id),
     FOREIGN KEY (job_id) REFERENCES experiments.jobs (job_id)
 
 
@@ -22,10 +21,10 @@ CREATE TABLE IF NOT EXISTS experiments.operators
 
 CREATE TABLE IF NOT EXISTS experiments.results
 (
-    experiment_id                       SERIAL,
-    job_id                              INT,
-    start_timestamp                     TIMESTAMPTZ,
-    end_timestamp                       TIMESTAMPTZ,
+    experiment_id                       TEXT,
+    job_id                              TEXT,
+    start_timestamp                     BIGINT,
+    end_timestamp                       BIGINT,
     PRIMARY KEY (experiment_id),
      FOREIGN KEY (job_id) REFERENCES experiments.jobs(job_id)
 
@@ -33,7 +32,7 @@ CREATE TABLE IF NOT EXISTS experiments.results
 
 CREATE TABLE IF NOT EXISTS experiments.kafka_metrics
 (
-    experiment_id                 SERIAL,
+    experiment_id                 TEXT,
     max_kafka_lag                 NUMERIC,
     mac_kafka_messages_per_second NUMERIC,
     FOREIGN KEY (experiment_id) REFERENCES experiments.results (experiment_id)
@@ -42,17 +41,18 @@ CREATE TABLE IF NOT EXISTS experiments.kafka_metrics
 
 CREATE TABLE IF NOT EXISTS experiments.operator_metrics
 (
-    experiment_id        SERIAL,
-    operator_id          INT,
+    experiment_id        TEXT,
+    operator_id          TEXT,
+    job_id               TEXT,
     operator_parallelism INT,
-    max_records_in       INT,
-    max_records_out      INT,
-    max_bytes_in         INT,
-    max_bytes_out        INT,
+    max_records_in       NUMERIC,
+    max_records_out      NUMERIC,
+    max_bytes_in         NUMERIC,
+    max_bytes_out        NUMERIC,
     max_latency          NUMERIC,
     max_backpresure      NUMERIC,
     FOREIGN KEY (experiment_id) REFERENCES experiments.results (experiment_id),
-    FOREIGN KEY (operator_id) REFERENCES experiments.operators (operator_id)
+    FOREIGN KEY (operator_id, job_id) REFERENCES experiments.operators (operator_id, job_id)
 
 
 );
