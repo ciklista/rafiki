@@ -78,7 +78,11 @@ public class DatabaseService {
             pstmt.setDouble(6, metric.getBytesIn());
             pstmt.setDouble(7, metric.getBytesOut());
             pstmt.setDouble(8, metric.getMaxLatency());
-            pstmt.setDouble(9, metric.getMinLatency());
+            double minLatency =  metric.getMinLatency();
+            if (minLatency == Double.POSITIVE_INFINITY) {
+                minLatency = 0.0;
+            }
+            pstmt.setDouble(9, minLatency);
             pstmt.setDouble(10, metric.getBackPresure());
             pstmt.setInt(11, metric.getOperatorParallelism());
             pstmt.executeUpdate();

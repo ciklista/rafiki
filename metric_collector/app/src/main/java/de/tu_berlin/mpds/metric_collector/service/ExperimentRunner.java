@@ -62,38 +62,40 @@ public class ExperimentRunner {
         int lastBackpressuredOperator = -1;
         int[] operatorConfig = null;
         boolean nextExperiment = true;
-        String jarId = "8984a1f7-3d0f-48ce-8869-08303e2827aa_processor-1.0-SNAPSHOT.jar";
+        String jarId = "0bcf1e43-da57-460f-bd0c-3789e26f065d_processor-1.0-SNAPSHOT.jar";
         while (nextExperiment) {
             String jobArg = experimentPlanner.getNextJobArgs(operatorNames, operatorConfig, lastBackpressuredOperator, "1000");
 
-            ExperimentResult result = run_experiment(jarId, jobArg, 30);
+            ExperimentResult result = run_experiment(jarId, jobArg, 60);
 
             operatorConfig = result.getParallelismConfig();
             lastBackpressuredOperator = result.getLastBackpressuredOperator();
-            if (lastBackpressuredOperator == -1) {
-                System.out.println("Could not create backpressure on any operator. Aborting.");
-                nextExperiment = false;
-            }
+
             if (operatorConfig[lastBackpressuredOperator + 1] == maxParallelism) {
                 nextExperiment = false;
             }
         }
     }
 
-    public ExperimentResult run_experiment(String jarID, String programArgs, int experimentDuration) throws InterruptedException, ExecutionException, IOException, SQLException {
+    private ExperimentResult run_experiment(String jarID, String programArgs, int experimentDuration) throws InterruptedException, ExecutionException, IOException, SQLException {
         // start job with given config
         JarRunResponse response = flinkAPIService.runJar(client, objectMapper, jarID, programArgs, "1");
         String jobId = response.getJobID();
-        System.out.println("started job: " + jobId);
-
+        de.tu_berlin.mpds.metric_collector.model.flinkapi.Job jobInfo = flinkAPIService.getJobInfo(jobId, client, objectMapper);
+        List<JobVertex> jobVertices = jobInfo.getVertices();
+        StringBuilder parallelismPrintString = new StringBuilder();
+        for (JobVertex vertex : jobVertices) {
+            parallelismPrintString.append("\t").append(vertex.getName()).append(" - Parallelism: ").append(vertex.getParallelism()).append("\n");
+        }
+        System.out.println("Started job " + jobId + " with the following parallelism config:");
+        System.out.println(parallelismPrintString);
         System.out.println("Waiting 10 seconds for the job to settle in");
         Thread.sleep(10 * 1000);
 
         // generate experiment_id
         String experimentId = UUID.randomUUID().toString();
 
-        de.tu_berlin.mpds.metric_collector.model.flinkapi.Job jobInfo = flinkAPIService.getJobInfo(jobId, client, objectMapper);
-        List<JobVertex> jobVertices = jobInfo.getVertices();
+
 
         // run experiment + collect metrics
         long experimentStarted = System.currentTimeMillis() / 1000L;
@@ -131,10 +133,10 @@ public class ExperimentRunner {
             parallelismConfig[i] = jobVertices.get(i).getParallelism();
         }
         int lastBackpressuredOperator = -1;
-        for (int i = 0; i < operatorMetricList.size(); i++) {
-            if (operatorMetricList.get(i).getBackPresure() > 0.5) {
+        for (OperatorMetric operatorMetric : operatorMetricList) {
+            if (operatorMetric.getBackPresure() > 0.5) {
                 for (Operator operator : jobOperators) {
-                    if (operator.getOperatorId().equals(operatorMetricList.get(i).getOperatorId())) {
+                    if (operator.getOperatorId().equals(operatorMetric.getOperatorId())) {
                         System.out.println("Found backpressure on task: " + operator.getTaskName() + " (Position " + operator.getOperatorPosition() + ")");
                         if (operator.getOperatorPosition() > lastBackpressuredOperator) {
                             lastBackpressuredOperator = operator.getOperatorPosition();
@@ -151,13 +153,10 @@ public class ExperimentRunner {
 
     private HashMap<String, OperatorMetric> runJobAndCollectMetrics(int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
         HashMap<String, OperatorMetric> maxOperatorMetrics = new HashMap<>();
-        StringBuilder parallelismPrintString = new StringBuilder();
         for (JobVertex vertex : vertices) {
-            maxOperatorMetrics.put(vertex.getId(), new OperatorMetric(experimentId, vertex.getId(), jobId, vertex.getParallelism(), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0));
-            parallelismPrintString.append("\t").append(vertex.getName()).append(" - Parallelism: ").append(vertex.getParallelism()).append("\n");
+            maxOperatorMetrics.put(vertex.getId(), new OperatorMetric(experimentId, vertex.getId(), jobId, vertex.getParallelism(), 0.0, 0.0, 0.0, 0.0, 0.0, Double.POSITIVE_INFINITY, 0.0));
         }
-        System.out.println("Starting experiment for job " + jobId + " with the following parallelism config:");
-        System.out.println(parallelismPrintString);
+        System.out.println("Starting metric collection...");
         for (long stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(durationSec); stop > System.nanoTime(); ) {
             updateOperatorMetricsForJob(client, objectMapper, jobId, maxOperatorMetrics);
         }
@@ -215,7 +214,7 @@ public class ExperimentRunner {
             if (current_value.getMaxLatency() < result.getValue().get(1)) {
                 current_value.setMaxLatency(result.getValue().get(1));
             }
-            if (current_value.getMinLatency() > result.getValue().get(1)) {
+            if (current_value.getMinLatency() > result.getValue().get(1) && result.getValue().get(1) != 0.0) {
                 current_value.setMinLatency(result.getValue().get(1));
             }
         }
