@@ -39,7 +39,6 @@ function JobGraph(param: any) {
     const layoutedElements = getLayoutedElements(param.initialElements, 'LR');
     const [elements, setElements] = useState(layoutedElements);
     const onConnect = (params: any) => {
-        console.log(("ggg"));
 
         setElements((els: any) =>
             addEdge({ ...params, type: 'smoothstep', animated: true }, els)

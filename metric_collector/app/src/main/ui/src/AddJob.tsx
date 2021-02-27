@@ -7,20 +7,25 @@ import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import axios from 'axios';
+import useLocalState from './useLocalState';
+import Job from './models/Job';
+import Fade from '@material-ui/core/Fade';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 export default function AddJob() {
     const [showForm, setShowForm] = useState(false);
     const [ip, setIp] = useState('');
     const [jar, setJar] = useState<File>();
-    function handleClose() {
+    const [jobs, setJobs] = useLocalState([], 'job-list');
+    const [submitting, setSubmitting] = useState(false);
+    function handleSubmit(e: any) {
+        e.preventDefault();
 
         jar?.arrayBuffer().then(buffer => {
+            setSubmitting(true);
             const blob = new Blob([buffer], { type: jar.type });
             let fd = new FormData();
-            console.log(jar instanceof Blob);
-
             fd.append('jarfile', blob, jar.name);
-
             axios.post(ip + '/jars/upload',
                 fd
                 , {
@@ -28,11 +33,33 @@ export default function AddJob() {
                         'Content-Type': 'multipart/form-data'
                     }
                 }
-            ).then(r => console.log(r));
+            ).then(r => {
+                setJobs((jobs: Job[]) => {
+                    console.log(jobs);
 
-            setShowForm(() => false)
+                    const new_job: Job = {
+                        name: 'Test',
+                        ip_adress: ip,
+                        jar_id: getJarId(r.data.filename)
+                    };
+                    return jobs.concat(new_job);
+                }
+                );
+                setSubmitting(false);
+            });
+
         }
         );
+    }
+
+    function onClose(e: any): void {
+        setShowForm(false);
+        setSubmitting(false);
+    }
+
+    function getJarId(filename: string): string {
+        const pathParts: string[] = filename.split('/');
+        return pathParts[pathParts.length - 1];
     }
 
     return (
@@ -41,14 +68,14 @@ export default function AddJob() {
                 <AddIcon />
                 Add Job
             </button>
-            <hr className="mt-1 border-t-1 border-gray-700" />
-            <Dialog open={showForm} onClose={handleClose} aria-labelledby="form-dialog-title">
+            <hr className="my-1 border-t-1 border-gray-700" />
+            <Dialog open={showForm} onClose={onClose} aria-labelledby="form-dialog-title">
                 <DialogTitle className="text-gray-500">Add new DSP Job</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         To add a new Job input an IP Adress and a jar for the job.
                     </DialogContentText>
-                    <form>
+                    <form className="flex flex-col">
                         <TextField
                             autoFocus
                             margin="dense"
@@ -57,21 +84,41 @@ export default function AddJob() {
                             label="Flink API IP Adress"
                             type="text"
                             required
-                            error
                             fullWidth
                             onChange={(e) => setIp(e.target.value)}
                         />
-                        <label htmlFor="jar">
+                        <TextField
+                            id="max-parallelism"
+                            label="Maximum Parallelism"
+                            variant="outlined"
+                            margin="dense"
+                            type="number"
+                            required
+                            fullWidth
+                        />
+                        <TextField
+                            id="operator-name"
+                            label="Operator Names (Comma separated list)"
+                            variant="outlined"
+                            margin="dense"
+                            type="text"
+                            required
+                            fullWidth
+                        />
+                        <label className="my-2" htmlFor="jar">
                             <input type="file" name="jar" id="jar" onChange={(e) => setJar(e.target.files?.[0])} required />
                         </label>
+                        <Fade in={!submitting}>
+                            <input type="submit" className="py-1 px-2 border-2 border-green-500 transition duration-200 opacity-100 focus:no-underline hover:opacity-80 rounded-md w-max" onClick={handleSubmit} color="primary" value="Submit" />
+                        </Fade>
+                        <Fade in={submitting}>
+                            <CircularProgress />
+                        </Fade>
                     </form>
                 </DialogContent>
                 <DialogActions className="flex flex-row">
-                    <button className="py-1 px-2 border-2 border-red-500 transition duration-200 opacity-100 focus:no-underline hover:opacity-80 rounded-md" onClick={() => setShowForm(false)} color="primary">
+                    <button className="py-1 px-2 border-2 border-red-500 transition duration-200 opacity-100 focus:no-underline hover:opacity-80 rounded-md" onClick={onClose} color="primary">
                         Cancel
-                    </button>
-                    <button className="py-1 px-2 border-2 border-green-500 transition duration-200 opacity-100 focus:no-underline hover:opacity-80 rounded-md" onClick={handleClose} color="primary">
-                        Subscribe
                     </button>
                 </DialogActions>
             </Dialog>

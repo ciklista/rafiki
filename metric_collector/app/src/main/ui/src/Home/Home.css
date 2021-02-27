@@ -13,17 +13,6 @@
     justify-content: space-between;
     display: flex;
     text-decoration: none;
-    color: rgba(31, 41, 55)
-}
-
-.status-green {
-    background-color: rgba(52, 211, 153)
-}
-
-.status-orange {
-    background-color: rgba(245, 158, 11)
-}
-
-.status-red {
-    background-color: rgba(220, 38, 38)
+    color: rgba(31, 41, 55);
+    background-color: rgba(52, 211, 153);
 }

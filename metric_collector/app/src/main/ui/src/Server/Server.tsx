@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import IServer from '../models/Server'
+import IServer from '../models/Job'
 import JobGraph from '../Job-Graph/Job-Graph';
 import './Server.css';
 
@@ -87,7 +87,7 @@ export default function Server() {
     }, [id])
     return (
         <div className="flex-1">
-            <div>Test {server?.name}</div>
+            <div>{server?.name}</div>
             <div className="h-96">
                 <JobGraph initialElements={initialElements} />
             </div>
