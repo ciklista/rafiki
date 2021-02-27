@@ -11,22 +11,28 @@ import useLocalState from './useLocalState';
 import Job from './models/Job';
 import Fade from '@material-ui/core/Fade';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import { useHistory } from 'react-router-dom';
 
-export default function AddJob() {
+export default function AddExperiment() {
     const [showForm, setShowForm] = useState(false);
+    const [name, setName] = useState('');
     const [ip, setIp] = useState('');
     const [jar, setJar] = useState<File>();
-    const [jobs, setJobs] = useLocalState([], 'job-list');
+    const [_, setJobs] = useLocalState([], 'job-list');
     const [submitting, setSubmitting] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const history = useHistory();
     function handleSubmit(e: any) {
         e.preventDefault();
 
         jar?.arrayBuffer().then(buffer => {
             setSubmitting(true);
+            setUploading(true);
             const blob = new Blob([buffer], { type: jar.type });
             let fd = new FormData();
             fd.append('jarfile', blob, jar.name);
-            axios.post(ip + '/jars/upload',
+            axios.post(ip + ':30881/jars/upload',
                 fd
                 , {
                     headers: {
@@ -38,14 +44,17 @@ export default function AddJob() {
                     console.log(jobs);
 
                     const new_job: Job = {
-                        name: 'Test',
+                        name: name,
                         ip_adress: ip,
                         jar_id: getJarId(r.data.filename)
                     };
                     return jobs.concat(new_job);
                 }
                 );
+                setUploading(false);
                 setSubmitting(false);
+                setShowForm(false);
+                // history.push('/');
             });
 
         }
@@ -73,15 +82,24 @@ export default function AddJob() {
                 <DialogTitle className="text-gray-500">Add new DSP Job</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        To add a new Job input an IP Adress and a jar for the job.
+                        To add a new Job input an IP Address and a jar for the job.
                     </DialogContentText>
                     <form className="flex flex-col">
                         <TextField
-                            autoFocus
+                            margin="dense"
+                            id="name"
+                            variant="outlined"
+                            label="Job Name"
+                            type="text"
+                            required
+                            fullWidth
+                            onChange={(e) => setName(e.target.value)}
+                        />
+                        <TextField
                             margin="dense"
                             id="IP"
                             variant="outlined"
-                            label="Flink API IP Adress"
+                            label="Flink API IP Address"
                             type="text"
                             required
                             fullWidth
@@ -112,7 +130,15 @@ export default function AddJob() {
                             <input type="submit" className="py-1 px-2 border-2 border-green-500 transition duration-200 opacity-100 focus:no-underline hover:opacity-80 rounded-md w-max" onClick={handleSubmit} color="primary" value="Submit" />
                         </Fade>
                         <Fade in={submitting}>
-                            <CircularProgress />
+                            <div className="flex flex-row items-center">
+                                <CircularProgress />
+                                { uploading &&
+                                    <span className="ml-2">Uploading Jar to Flink Server. This may take a while</span>
+                                }
+                                {!uploading &&
+                                    <span className="ml-2">Running experiments. This may take a while.</span>
+                                }
+                            </div>
                         </Fade>
                     </form>
                 </DialogContent>

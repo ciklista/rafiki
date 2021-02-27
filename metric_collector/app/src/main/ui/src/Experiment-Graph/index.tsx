@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import ReactFlow, {
     ReactFlowProvider,
     addEdge,
@@ -36,20 +36,16 @@ const getLayoutedElements = (elements: any, direction: string) => {
     });
 };
 function JobGraph(param: any) {
-    const layoutedElements = getLayoutedElements(param.initialElements, 'LR');
-    const [elements, setElements] = useState(layoutedElements);
-    const onConnect = (params: any) => {
+    const [elements, setElements] = useState<any>();
+    useEffect(() => {
+        setElements(() => getLayoutedElements(param.initialElements, 'LR'))
+    }, [param])
 
-        setElements((els: any) =>
-            addEdge({ ...params, type: 'smoothstep', animated: true }, els)
-        );
-    }
     return (
         <div className="h-96">
             <ReactFlowProvider>
                 <ReactFlow
                     elements={elements}
-                    onConnect={onConnect}
                     onLoad={i => i.fitView()}
                 >
                     <Controls />
