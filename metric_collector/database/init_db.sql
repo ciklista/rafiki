@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS experiments.jobs
 (
     job_id   TEXT,
     job_name TEXT,
+    jar_id   TEXT,
     PRIMARY KEY (job_id)
 );
 

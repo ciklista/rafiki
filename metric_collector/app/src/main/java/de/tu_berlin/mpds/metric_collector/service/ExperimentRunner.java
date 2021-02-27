@@ -62,12 +62,18 @@ public class ExperimentRunner {
         int lastBackpressuredOperator = -1;
         int[] operatorConfig = null;
         boolean nextExperiment = true;
-        String jarId = "27c0f632-335c-442d-a404-8840b2802420_processor-1.0-SNAPSHOT.jar";
+        String jarId = "8984a1f7-3d0f-48ce-8869-08303e2827aa_processor-1.0-SNAPSHOT.jar";
         while (nextExperiment) {
             String jobArg = experimentPlanner.getNextJobArgs(operatorNames, operatorConfig, lastBackpressuredOperator, "1000");
+
             ExperimentResult result = run_experiment(jarId, jobArg, 30);
+
             operatorConfig = result.getParallelismConfig();
             lastBackpressuredOperator = result.getLastBackpressuredOperator();
+            if (lastBackpressuredOperator == -1) {
+                System.out.println("Could not create backpressure on any operator. Aborting.");
+                nextExperiment = false;
+            }
             if (operatorConfig[lastBackpressuredOperator + 1] == maxParallelism) {
                 nextExperiment = false;
             }
@@ -102,7 +108,7 @@ public class ExperimentRunner {
 
 
         // update db
-        Job job = new Job(jobId, jobInfo.getName());
+        Job job = new Job(jobId, jobInfo.getName(), jarID);
 
         List<Operator> jobOperators = new ArrayList<>();
         for (JobVertex vertex : jobVertices) {

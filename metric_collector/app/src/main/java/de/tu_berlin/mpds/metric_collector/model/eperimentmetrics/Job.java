@@ -14,4 +14,5 @@ public class Job implements Serializable {
 
   private String jobId;
   private String jobName;
+  private String jarId;
 }
