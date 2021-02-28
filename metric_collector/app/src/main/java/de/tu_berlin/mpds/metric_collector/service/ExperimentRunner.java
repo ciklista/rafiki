@@ -55,7 +55,6 @@ public class ExperimentRunner {
     @Autowired
     private DatabaseService databaseService;
 
-
     public void start(String[] operators,String appJarId, int maximumParallelism) throws InterruptedException, ExecutionException, IOException, SQLException {
         String[] operatorNames = operators;
         int maxParallelism = maximumParallelism;
@@ -72,6 +71,7 @@ public class ExperimentRunner {
             lastBackpressuredOperator = result.getLastBackpressuredOperator();
 
             if (operatorConfig[lastBackpressuredOperator + 1] == maxParallelism) {
+                System.out.println("Reached maximum parallelism on the task that is the current bottleneck or on the source task. Aborting.");
                 nextExperiment = false;
             }
         }
