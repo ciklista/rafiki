@@ -30,10 +30,11 @@ public class DatabaseService {
     public void insertJobs(List<Job> jobs) throws SQLException {
         Connection conn = getConnection();
         for (Job job : jobs) {
-            String sql = "INSERT INTO experiments.jobs (job_id,job_name) VALUES (?,?);";
+            String sql = "INSERT INTO experiments.jobs (job_id,job_name,jar_id) VALUES (?,?,?);";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, job.getJobId());
             pstmt.setString(2, job.getJobName());
+            pstmt.setString(3, job.getJarId());
             pstmt.executeUpdate();
         }
 
@@ -48,7 +49,7 @@ public class DatabaseService {
     public void insertOperators(List<Operator> operators) throws SQLException {
         Connection conn = getConnection();
         for (Operator operator : operators) {
-            String sql = "INSERT INTO experiments.operators (operator_id,job_id, task_name, operatorPosition) VALUES (?,?,?,?);";
+            String sql = "INSERT INTO experiments.operators (operator_id,job_id, task_name, operator_position) VALUES (?,?,?,?);";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, operator.getOperatorId());
             pstmt.setString(2, operator.getJobId());
@@ -67,7 +68,7 @@ public class DatabaseService {
     public void insertOperatorMetrics(List<OperatorMetric> metrics) throws SQLException {
         Connection conn = getConnection();
         for (OperatorMetric metric : metrics) {
-            String sql = "INSERT INTO experiments.operator_metrics (experiment_id,operator_id,job_id, max_records_in, max_records_out, max_bytes_in, max_bytes_out, max_latency, max_backpresure, operator_parallelism) VALUES (?,?,?,?,?,?, ?, ?,?,?);";
+            String sql = "INSERT INTO experiments.operator_metrics (experiment_id,operator_id,job_id, max_records_in, max_records_out, max_bytes_in, max_bytes_out, max_latency, min_latency, max_backpresure, operator_parallelism) VALUES (?,?,?,?,?,?,?, ?, ?,?,?);";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, metric.getExperimentId());
             pstmt.setString(2, metric.getOperatorId());
@@ -76,9 +77,14 @@ public class DatabaseService {
             pstmt.setDouble(5, metric.getRecordsOut());
             pstmt.setDouble(6, metric.getBytesIn());
             pstmt.setDouble(7, metric.getBytesOut());
-            pstmt.setDouble(8, metric.getLatency());
-            pstmt.setDouble(9, metric.getBackPresure());
-            pstmt.setInt(10, metric.getOperatorParallelism());
+            pstmt.setDouble(8, metric.getMaxLatency());
+            double minLatency =  metric.getMinLatency();
+            if (minLatency == Double.POSITIVE_INFINITY) {
+                minLatency = 0.0;
+            }
+            pstmt.setDouble(9, minLatency);
+            pstmt.setDouble(10, metric.getBackPresure());
+            pstmt.setInt(11, metric.getOperatorParallelism());
             pstmt.executeUpdate();
         }
     }

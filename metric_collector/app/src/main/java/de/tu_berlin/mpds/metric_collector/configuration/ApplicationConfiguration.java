@@ -10,15 +10,10 @@ public class ApplicationConfiguration {
 
 
     private String clusteraddress;
-
     private String prometheusapibasepath;
-
     private String prometheusport;
-
     private String flinkport;
-
     private String postgreshost;
-
     private int postgresport;
     private String postgresuser;
     private String postgrespw;

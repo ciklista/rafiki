@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS experiments.jobs
 (
     job_id   TEXT,
     job_name TEXT,
+    jar_id   TEXT,
     PRIMARY KEY (job_id)
 );
 
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS experiments.operator_metrics
     max_bytes_in         NUMERIC,
     max_bytes_out        NUMERIC,
     max_latency          NUMERIC,
+    min_latency          NUMERIC,
     max_backpresure      NUMERIC,
     FOREIGN KEY (experiment_id) REFERENCES experiments.results (experiment_id),
     FOREIGN KEY (operator_id, job_id) REFERENCES experiments.operators (operator_id, job_id)
