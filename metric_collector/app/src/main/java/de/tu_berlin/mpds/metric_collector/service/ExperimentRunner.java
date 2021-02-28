@@ -39,8 +39,6 @@ public class ExperimentRunner {
         public final int lastBackpressuredOperator;
     }
 
-    private static final HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
-    private final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Autowired
     private FlinkAPIService flinkAPIService;
@@ -55,14 +53,14 @@ public class ExperimentRunner {
     @Autowired
     private DatabaseService databaseService;
 
-    public void start(String[] operators,String appJarId, int maximumParallelism) throws InterruptedException, ExecutionException, IOException, SQLException {
+    public void start(String clusterAddress, String[] operators, String appJarId, int maximumParallelism) throws InterruptedException, ExecutionException, IOException, SQLException {
         int lastBackpressuredOperator = -1;
         int[] operatorConfig = null;
         boolean nextExperiment = true;
         while (nextExperiment) {
             String jobArg = experimentPlanner.getNextJobArgs(operators, operatorConfig, lastBackpressuredOperator, "1000");
 
-            ExperimentResult result = run_experiment(appJarId, jobArg, 60);
+            ExperimentResult result = run_experiment(clusterAddress, appJarId, jobArg, 60);
 
             operatorConfig = result.getParallelismConfig();
             lastBackpressuredOperator = result.getLastBackpressuredOperator();
@@ -74,11 +72,11 @@ public class ExperimentRunner {
         }
     }
 
-    private ExperimentResult run_experiment(String jarID, String programArgs, int experimentDuration) throws InterruptedException, ExecutionException, IOException, SQLException {
+    private ExperimentResult run_experiment(String clusterAddress, String jarID, String programArgs, int experimentDuration) throws InterruptedException, ExecutionException, IOException, SQLException {
         // start job with given config
-        JarRunResponse response = flinkAPIService.runJar(client, objectMapper, jarID, programArgs, "1");
+        JarRunResponse response = flinkAPIService.runJar(clusterAddress, jarID, programArgs, "1");
         String jobId = response.getJobID();
-        de.tu_berlin.mpds.metric_collector.model.flinkapi.Job jobInfo = flinkAPIService.getJobInfo(jobId, client, objectMapper);
+        de.tu_berlin.mpds.metric_collector.model.flinkapi.Job jobInfo = flinkAPIService.getJobInfo(jobId, clusterAddress);
         List<JobVertex> jobVertices = jobInfo.getVertices();
         StringBuilder parallelismPrintString = new StringBuilder();
         for (JobVertex vertex : jobVertices) {
@@ -93,16 +91,15 @@ public class ExperimentRunner {
         String experimentId = UUID.randomUUID().toString();
 
 
-
         // run experiment + collect metrics
         long experimentStarted = System.currentTimeMillis() / 1000L;
 
-        HashMap<String, OperatorMetric> maxOperatorMetrics = runJobAndCollectMetrics(experimentDuration, jobId, experimentId, jobVertices);
+        HashMap<String, OperatorMetric> maxOperatorMetrics = runJobAndCollectMetrics(clusterAddress, experimentDuration, jobId, experimentId, jobVertices);
 
         long experimentStopped = System.currentTimeMillis() / 1000L;
 
         System.out.println("Experiment done.");
-        flinkAPIService.cancelJob(client, objectMapper, jobId);
+        flinkAPIService.cancelJob(clusterAddress, jobId);
         System.out.println("Cancelled job.");
 
 
@@ -148,28 +145,28 @@ public class ExperimentRunner {
 
     }
 
-    private HashMap<String, OperatorMetric> runJobAndCollectMetrics(int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
+    private HashMap<String, OperatorMetric> runJobAndCollectMetrics(String clusterAddress, int durationSec, String jobId, String experimentId, List<JobVertex> vertices) throws InterruptedException, ExecutionException, IOException {
         HashMap<String, OperatorMetric> maxOperatorMetrics = new HashMap<>();
         for (JobVertex vertex : vertices) {
             maxOperatorMetrics.put(vertex.getId(), new OperatorMetric(experimentId, vertex.getId(), jobId, vertex.getParallelism(), 0.0, 0.0, 0.0, 0.0, 0.0, Double.POSITIVE_INFINITY, 0.0));
         }
         System.out.println("Starting metric collection...");
         for (long stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(durationSec); stop > System.nanoTime(); ) {
-            updateOperatorMetricsForJob(client, objectMapper, jobId, maxOperatorMetrics);
+            updateOperatorMetricsForJob(clusterAddress, jobId, maxOperatorMetrics);
         }
         System.out.println("Finished experiment for job: " + jobId);
         return maxOperatorMetrics;
     }
 
-    private void updateOperatorMetricsForJob(HttpClient client, ObjectMapper objectMapper, String jobId, HashMap<String, OperatorMetric> operatorMetrics)
-        throws InterruptedException, ExecutionException, IOException {
+    private void updateOperatorMetricsForJob(String clusterAddress, String jobId, HashMap<String, OperatorMetric> operatorMetrics)
+            throws InterruptedException, ExecutionException, IOException {
 
-        List<Result> bytesIn = prometheusMetricService.executePrometheusQuery(prometheusQuery.getBytesInByTask(jobId), client, objectMapper).getData().getResult();
-        List<Result> bytesOut = prometheusMetricService.executePrometheusQuery(prometheusQuery.getBytesOutByTask(jobId), client, objectMapper).getData().getResult();
-        List<Result> messagesIn = prometheusMetricService.executePrometheusQuery(prometheusQuery.getMessagesInByTask(jobId), client, objectMapper).getData().getResult();
-        List<Result> messagesOut = prometheusMetricService.executePrometheusQuery(prometheusQuery.getMessagesOutByTask(jobId), client, objectMapper).getData().getResult();
-        List<Result> backpressure = prometheusMetricService.executePrometheusQuery(prometheusQuery.getMaxBackpressureByTask(jobId), client, objectMapper).getData().getResult();
-        List<Result> latency = prometheusMetricService.executePrometheusQuery(prometheusQuery.getAvgLatencyByTask(jobId), client, objectMapper).getData().getResult();
+        List<Result> bytesIn = prometheusMetricService.executePrometheusQuery(prometheusQuery.getBytesInByTask(clusterAddress, jobId)).getData().getResult();
+        List<Result> bytesOut = prometheusMetricService.executePrometheusQuery(prometheusQuery.getBytesOutByTask(clusterAddress, jobId)).getData().getResult();
+        List<Result> messagesIn = prometheusMetricService.executePrometheusQuery(prometheusQuery.getMessagesInByTask(clusterAddress, jobId)).getData().getResult();
+        List<Result> messagesOut = prometheusMetricService.executePrometheusQuery(prometheusQuery.getMessagesOutByTask(clusterAddress, jobId)).getData().getResult();
+        List<Result> backpressure = prometheusMetricService.executePrometheusQuery(prometheusQuery.getMaxBackpressureByTask(clusterAddress, jobId)).getData().getResult();
+        List<Result> latency = prometheusMetricService.executePrometheusQuery(prometheusQuery.getAvgLatencyByTask(clusterAddress, jobId)).getData().getResult();
 
         for (Result result : bytesIn) {
             OperatorMetric current_value = operatorMetrics.get(result.getMetric().getTaskId());

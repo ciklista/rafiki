@@ -34,11 +34,12 @@ public class EndPointController {
 
     @PostMapping(value = "/experiment", consumes = {"application/json"})
     public ResponseEntity<Object> startExperiment(@RequestBody String[] operators,
+                                                  @RequestParam(value = "clusterAddress") String clusterAddress,
                                                   @RequestParam(value = "jarid") String jarId,
                                                   @RequestParam(value = "maxParallelism") int maxParallelism
     ) throws InterruptedException, ExecutionException, SQLException, IOException {
-
-        experimentRunner.start(operators, jarId, maxParallelism);
+      clusterAddress = clusterAddress.replaceAll("/+$", "");
+      experimentRunner.start(clusterAddress, operators, jarId, maxParallelism);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 

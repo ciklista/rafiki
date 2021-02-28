@@ -2,6 +2,7 @@ package de.tu_berlin.mpds.metric_collector.service;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tu_berlin.mpds.metric_collector.model.flinkapi.*;
 import de.tu_berlin.mpds.metric_collector.util.FlinkQuery;
@@ -27,15 +28,17 @@ import java.util.concurrent.ExecutionException;
 public class FlinkAPIService {
     @Autowired
     private FlinkQuery flinkQuery;
+    private static final HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+    private final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    protected List<Job> getJobs(HttpClient client, ObjectMapper objectMapper) throws ExecutionException, InterruptedException, JsonProcessingException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJobsOverview())).GET().build();
+    protected List<Job> getJobs(String clusterAddress) throws ExecutionException, InterruptedException, JsonProcessingException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJobsOverview(clusterAddress))).GET().build();
         CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         return objectMapper.readValue(response.get().body(), JobsResponse.class).getJobs();
     }
 
-    protected Job getJobInfo(String jId, HttpClient client, ObjectMapper objectMapper) throws ExecutionException, InterruptedException, JsonProcessingException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJobs() + jId)).GET().build();
+    protected Job getJobInfo(String jId, String clusterAddress) throws ExecutionException, InterruptedException, JsonProcessingException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJobs(clusterAddress) + jId)).GET().build();
         CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         Job job = objectMapper.readValue(response.get().body(), Job.class);
         for (int i = 0; i < job.getVertices().size(); i++){
@@ -44,17 +47,17 @@ public class FlinkAPIService {
 
         return job;
     }
-    public List<TaskManager> getTaskManagers(HttpClient client, ObjectMapper objectMapper) throws ExecutionException, InterruptedException, JsonProcessingException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create((flinkQuery.getTaskmanagers()))).GET().build();
+    public List<TaskManager> getTaskManagers(String clusterAddress) throws ExecutionException, InterruptedException, JsonProcessingException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create((flinkQuery.getTaskmanagers(clusterAddress)))).GET().build();
         CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         return objectMapper.readValue(response.get().body(), TaskManagersResponse.class).getTaskManagers();
     }
 
-    public JarUploadResponse postJob(HttpClient client, ObjectMapper objectMapper, String resourcePath) throws  ExecutionException, InterruptedException, JsonProcessingException, FileNotFoundException, IOException {
+    public JarUploadResponse postJob(String clusterAddress, String resourcePath) throws  ExecutionException, InterruptedException, JsonProcessingException, FileNotFoundException, IOException {
         Path path = new ClassPathResource(resourcePath).getFile().toPath();
         MultiPartBodyPublisher publisher = new MultiPartBodyPublisher()
                 .addPart("jarfile", path);
-        HttpRequest request = HttpRequest.newBuilder(URI.create((flinkQuery.getJars())))
+        HttpRequest request = HttpRequest.newBuilder(URI.create((flinkQuery.getJars(clusterAddress))))
                 .header("Content-Type", "multipart/form-data; boundary=" +publisher.getBoundary())
                 .POST(publisher.build())
                 .build();
@@ -63,11 +66,11 @@ public class FlinkAPIService {
         return jarUploadResponse;
     }
 
-    public JarRunResponse runJar(HttpClient client, ObjectMapper objectMapper, String jarID, String programArgs, String parallelism) throws ExecutionException, InterruptedException, JsonProcessingException {
+    public JarRunResponse runJar(String clusterAddress, String jarID, String programArgs, String parallelism) throws ExecutionException, InterruptedException, JsonProcessingException {
         JSONObject configuration = new JSONObject();
         configuration.put("programArgs", programArgs);
         configuration.put("parallelism", parallelism);
-        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJarsRun(jarID)))
+        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJarsRun(clusterAddress, jarID)))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(configuration.toJSONString()))
                 .build();
@@ -76,18 +79,18 @@ public class FlinkAPIService {
         return jarRunResponse;
     }
 
-    public void cancelJob(HttpClient client, ObjectMapper objectMapper, String jobId) throws ExecutionException, InterruptedException, JsonProcessingException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJob(jobId)))
+    public void cancelJob(String clusterAddress, String jobId) throws ExecutionException, InterruptedException, JsonProcessingException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJob(clusterAddress, jobId)))
                 .method("PATCH",  HttpRequest.BodyPublishers.noBody())
                 .build();
         CompletableFuture<HttpResponse<String>> response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
         response.get();
     }
 
-    public JobPlan getJobPlan(HttpClient client, ObjectMapper objectMapper, String jarID, String programArgs) throws ExecutionException, InterruptedException, JsonProcessingException {
+    public JobPlan getJobPlan(String clusterAddress, String jarID, String programArgs) throws ExecutionException, InterruptedException, JsonProcessingException {
         JSONObject configuration = new JSONObject();
         configuration.put("programArgs", programArgs);
-        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJarsPlan(jarID)))
+        HttpRequest request = HttpRequest.newBuilder(URI.create(flinkQuery.getJarsPlan(clusterAddress, jarID)))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(configuration.toJSONString()))
                 .build();
