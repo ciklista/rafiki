@@ -6,9 +6,13 @@ import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.KafkaMetric;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Operator;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.OperatorMetric;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result;
+import de.tu_berlin.mpds.metric_collector.model.experiments.ExperimentResults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,7 +82,7 @@ public class DatabaseService {
             pstmt.setDouble(6, metric.getBytesIn());
             pstmt.setDouble(7, metric.getBytesOut());
             pstmt.setDouble(8, metric.getMaxLatency());
-            double minLatency =  metric.getMinLatency();
+            double minLatency = metric.getMinLatency();
             if (minLatency == Double.POSITIVE_INFINITY) {
                 minLatency = 0.0;
             }
@@ -125,6 +129,27 @@ public class DatabaseService {
             pstmt.executeUpdate();
         }
     }
+
+    public List<ExperimentResults> getExperimentResults(String jarId) throws SQLException, IOException {
+        List<ExperimentResults> resultList = new ArrayList<>();
+        Connection conn = getConnection();
+        String query = Files.readString(Paths.get("src/main/java/de/tu_berlin/mpds/metric_collector/service/experiment_results.sql"));
+        PreparedStatement pst = conn.prepareStatement(query);
+        pst.setString(1, jarId);
+        ResultSet rs = pst.executeQuery();
+        while (rs.next()) {
+            ExperimentResults result = new ExperimentResults(rs.getString("task_name"),
+                    rs.getInt("operator_parallelism"),
+                    (Integer[]) rs.getArray("max_throughput").getArray(),
+                    rs.getInt("avg_max_throughput"),
+                    rs.getInt("highest_max_throughput"),
+                    rs.getInt("operator_position"));
+            resultList.add(result);
+        }
+        return resultList;
+    }
+
+
 }
 
 
