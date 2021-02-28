@@ -1,4 +1,4 @@
-import Job from '../models/Job';
+import Experiment from '../models/Experiment';
 import React from 'react';
 import './Home.css';
 import { Link } from 'react-router-dom';
@@ -12,8 +12,11 @@ export default function Home() {
     return (
         <div className="content">
             <AddExperiment/>
-            {jobs.map((job: Job, index: number) =>
-                <Link to={`/experiment/${job.jar_id}`} className='server transition duration-200 opacity-100 hover:opacity-80' key={index}>
+            {jobs.map((job: Experiment, index: number) =>
+                <Link to={{
+                        pathname: `/experiment/${job.jar_id}`,
+                        state: job
+                    }} className='server transition duration-200 opacity-100 hover:opacity-80' key={index}>
                     <div>{job.name}</div>
                     <div>{job.ip_adress}</div>
                 </Link>

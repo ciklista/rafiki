@@ -11,7 +11,7 @@ import { uploadJar } from './FlinkAPIService';
 import { startExperiment } from './MetricCollectorService';
 // @ts-ignore
 import useLocalState from './useLocalState';
-import Job from './models/Job';
+import Experiment from './models/Experiment';
 import Fade from '@material-ui/core/Fade';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import { useHistory } from 'react-router-dom';
@@ -37,19 +37,23 @@ export default function AddExperiment() {
         setSubmitting(true);
         setUploading(true);
         uploadJar(jar, ip).then(r => {
-            setJobs((jobs: Job[]) => {
-                const new_job: Job = {
-                    name: name,
-                    ip_adress: ip,
-                    jar_id: getJarId(r.data.filename)
-                };
+            const new_job: Experiment = {
+                name: name,
+                ip_adress: ip,
+                jar_id: getJarId(r.data.filename)
+            };
+            setJobs((jobs: Experiment[]) => {
+
                 return jobs.concat(new_job);
             });
             setUploading(false);
-            startExperiment(getJarId(r.data.filename), max, operators).then(() => {
+            startExperiment(getJarId(r.data.filename), max, operators, ip).then(() => {
                 setSubmitting(false);
                 setUploading(false);
-                history.push(`/experiments/${getJarId(r.data.filename)}`);
+                history.push({
+                    pathname: `/experiments/${getJarId(r.data.filename)}`,
+                    state: new_job
+                });
             });
         });
 
@@ -69,21 +73,21 @@ export default function AddExperiment() {
         <div>
             <button onClick={() => setShowForm(true)} className="rounded-md text-gray-100 bg-blue-600 flex flex-row w-max p-2 transition duration-200 hover:opacity-80 focus:outline-none opacity-100 ease-in-out">
                 <AddIcon />
-                Add Job
+                Add Experiment
             </button>
             <hr className="my-1 border-t-1 border-gray-700" />
             <Dialog open={showForm} onClose={onClose} aria-labelledby="form-dialog-title">
-                <DialogTitle className="text-gray-500">Add new DSP Job</DialogTitle>
+                <DialogTitle className="text-gray-500">Add new DSP Experiment</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        To add a new Job input an IP Address and a jar for the job.
+                        To add a new Experiment input an IP Address and a jar for the job.
                     </DialogContentText>
                     <form className="flex flex-col">
                         <TextField
                             margin="dense"
                             id="name"
                             variant="outlined"
-                            label="Job Name"
+                            label="Experiment Name"
                             type="text"
                             required
                             fullWidth
