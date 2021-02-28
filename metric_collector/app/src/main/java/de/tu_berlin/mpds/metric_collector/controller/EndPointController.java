@@ -35,7 +35,7 @@ public class EndPointController {
     @PostMapping(value = "/experiment", consumes = {"application/json"})
     public ResponseEntity<Object> startExperiment(@RequestBody String[] operators,
                                                   @RequestParam(value = "clusterAddress") String clusterAddress,
-                                                  @RequestParam(value = "jarid") String jarId,
+                                                  @RequestParam(value = "jarId") String jarId,
                                                   @RequestParam(value = "maxParallelism") int maxParallelism
     ) throws InterruptedException, ExecutionException, SQLException, IOException {
       clusterAddress = clusterAddress.replaceAll("/+$", "");
