@@ -2,7 +2,7 @@ import React from 'react';
 import './App.css';
 import Header from './Header';
 import Home from './Home';
-import Server from './Experiment';
+import Experiment from './Experiment';
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 function App() {
@@ -14,8 +14,8 @@ function App() {
           <Route exact path="/">
             <Home />
           </Route>
-          <Route path="/server/:id">
-            <Server />
+          <Route path="/experiment/:jar_id">
+            <Experiment />
           </Route>
         </Switch>
       </Router>

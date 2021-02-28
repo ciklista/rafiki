@@ -7,15 +7,15 @@ import useLocalState from '../useLocalState';
 
 export default function Home() {
 
-    const [servers, _] = useLocalState([], 'job-list');
+    const [jobs, _] = useLocalState([], 'job-list');
 
     return (
         <div className="content">
             <AddExperiment/>
-            {servers.map((server: Job, index: number) =>
-                <Link to={`/server/${server.ip_adress}`} className='server transition duration-200 opacity-100 hover:opacity-80' key={index}>
-                    <div>{server.name}</div>
-                    <div>{server.ip_adress}</div>
+            {jobs.map((job: Job, index: number) =>
+                <Link to={`/experiment/${job.jar_id}`} className='server transition duration-200 opacity-100 hover:opacity-80' key={index}>
+                    <div>{job.name}</div>
+                    <div>{job.ip_adress}</div>
                 </Link>
             )}
         </div>

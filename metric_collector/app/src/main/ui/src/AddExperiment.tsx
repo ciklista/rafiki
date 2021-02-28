@@ -1,3 +1,4 @@
+// @ts-ignore
 import React, { useState } from 'react';
 import AddIcon from '@material-ui/icons/Add';
 import TextField from '@material-ui/core/TextField';
@@ -6,7 +7,9 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import axios from 'axios';
+import { uploadJar } from './FlinkAPIService';
+import { startExperiment } from './MetricCollectorService';
+// @ts-ignore
 import useLocalState from './useLocalState';
 import Job from './models/Job';
 import Fade from '@material-ui/core/Fade';
@@ -14,51 +17,42 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import { useHistory } from 'react-router-dom';
 
 export default function AddExperiment() {
-    const [showForm, setShowForm] = useState(false);
-    const [name, setName] = useState('');
-    const [ip, setIp] = useState('');
+    const [name, setName] = useState<string>('');
+    const [ip, setIp] = useState<string>('');
     const [jar, setJar] = useState<File>();
+    const [max, setMax] = useState<number>();
+    const [operators, setOperators] = useState<string>();
+
     const [_, setJobs] = useLocalState([], 'job-list');
+
+    const [showForm, setShowForm] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [uploading, setUploading] = useState(false);
 
     const history = useHistory();
     function handleSubmit(e: any) {
+        if (!jar) return;
         e.preventDefault();
 
-        jar?.arrayBuffer().then(buffer => {
-            setSubmitting(true);
-            setUploading(true);
-            const blob = new Blob([buffer], { type: jar.type });
-            let fd = new FormData();
-            fd.append('jarfile', blob, jar.name);
-            axios.post(ip + ':30881/jars/upload',
-                fd
-                , {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                }
-            ).then(r => {
-                setJobs((jobs: Job[]) => {
-                    console.log(jobs);
-
-                    const new_job: Job = {
-                        name: name,
-                        ip_adress: ip,
-                        jar_id: getJarId(r.data.filename)
-                    };
-                    return jobs.concat(new_job);
-                }
-                );
-                setUploading(false);
-                setSubmitting(false);
-                setShowForm(false);
-                // history.push('/');
+        setSubmitting(true);
+        setUploading(true);
+        uploadJar(jar, ip).then(r => {
+            setJobs((jobs: Job[]) => {
+                const new_job: Job = {
+                    name: name,
+                    ip_adress: ip,
+                    jar_id: getJarId(r.data.filename)
+                };
+                return jobs.concat(new_job);
             });
+            setUploading(false);
+            startExperiment(getJarId(r.data.filename), max, operators).then(() => {
+                setSubmitting(false);
+                setUploading(false);
+                history.push(`/experiments/${getJarId(r.data.filename)}`);
+            });
+        });
 
-        }
-        );
     }
 
     function onClose(e: any): void {
@@ -113,6 +107,7 @@ export default function AddExperiment() {
                             type="number"
                             required
                             fullWidth
+                            onChange={(e) => setMax(parseInt(e.target.value))}
                         />
                         <TextField
                             id="operator-name"
@@ -122,6 +117,7 @@ export default function AddExperiment() {
                             type="text"
                             required
                             fullWidth
+                            onChange={(e) => setOperators(e.target.value)}
                         />
                         <label className="my-2" htmlFor="jar">
                             <input type="file" name="jar" id="jar" onChange={(e) => setJar(e.target.files?.[0])} required />
@@ -136,7 +132,7 @@ export default function AddExperiment() {
                                     <span className="ml-2">Uploading Jar to Flink Server. This may take a while</span>
                                 }
                                 {!uploading &&
-                                    <span className="ml-2">Running experiments. This may take a while.</span>
+                                    <span className="ml-2">Running experiments. This may take a while. You will be redirected when the experiments are finished.</span>
                                 }
                             </div>
                         </Fade>

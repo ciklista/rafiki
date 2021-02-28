@@ -4,7 +4,7 @@ import JobGraph from '../Experiment-Graph';
 import './Experiment.css';
 
 export default function Server() {
-    //let { id } = useParams<{ id: string }>();
+    let { jar_id } = useParams<{ jar_id: string }>();
     const position = { x: 0, y: 0 };
     const edgeType = 'solid';
     const initialElements = [

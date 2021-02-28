@@ -1,0 +1,17 @@
+import axios from 'axios';
+
+export function uploadJar(jar: File, ip: string): Promise<any> {
+    return jar.arrayBuffer().then(buffer => {
+        const blob = new Blob([buffer], { type: jar.type });
+        let fd = new FormData();
+        fd.append('jarfile', blob, jar.name);
+        return axios.post(ip + ':30881/jars/upload',
+            fd
+            , {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }
+        )
+    })
+}
