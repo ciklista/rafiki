@@ -25,7 +25,7 @@ public class PrometheusMetricService {
     private static final HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
     private final ObjectMapper objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-   PrometheusJsonResponse executePrometheusQuery(URI uri, HttpClient client, ObjectMapper objectMapper) throws
+   PrometheusJsonResponse executePrometheusQuery(URI uri) throws
             InterruptedException, ExecutionException, IOException {
 
         HttpRequest request = HttpRequest.newBuilder(uri).GET().build();

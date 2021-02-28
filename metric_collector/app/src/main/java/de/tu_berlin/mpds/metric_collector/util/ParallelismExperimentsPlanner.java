@@ -21,8 +21,8 @@ public class ParallelismExperimentsPlanner {
     @Autowired
     private FlinkAPIService flinkAPIService;
 
-    public int getMaxParallelism(HttpClient client, ObjectMapper objectMapper) throws ExecutionException, InterruptedException, JsonProcessingException {
-        List<TaskManager> taskManagers = flinkAPIService.getTaskManagers(client, objectMapper);
+    public int getMaxParallelism(String clusterAddress) throws ExecutionException, InterruptedException, JsonProcessingException {
+        List<TaskManager> taskManagers = flinkAPIService.getTaskManagers(clusterAddress);
         int maxParallelism = 0;
         for (TaskManager taskManager : taskManagers) {
             maxParallelism += taskManager.getSlotsNumber();

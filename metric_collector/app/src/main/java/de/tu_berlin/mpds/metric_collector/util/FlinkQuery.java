@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 public class FlinkQuery {
 
 
-    private String BASE_URL_FLINK;
     private String FLINK_JOBS_OVERVIEW = "/jobs/overview";
     private String FLINK_JOBS = "/jobs/";
     private String FLINK_TASKMANAGERS = "/taskmanagers";
@@ -19,40 +18,40 @@ public class FlinkQuery {
     @Autowired
     private ApplicationConfiguration applicationConfiguration;
 
-    public String getBASE_URL_FLINK() {
-        BASE_URL_FLINK = applicationConfiguration.getClusteraddress() + ":" + applicationConfiguration.getFlinkPort();
-        return BASE_URL_FLINK;
+    public String getBaseUrl(String clusterAddress) {
+        return clusterAddress + ":" + applicationConfiguration.getFlinkPort();
     }
 
-    public String getJobsOverview() {
-        return getBASE_URL_FLINK() + FLINK_JOBS_OVERVIEW;
+    public String getJobsOverview(String clusterAddress) {
+        return getBaseUrl(clusterAddress) + FLINK_JOBS_OVERVIEW;
     }
 
-    public String getJobs() {
-        return getBASE_URL_FLINK() + FLINK_JOBS;
+    public String getJobs(String clusterAddress) {
+
+        return getBaseUrl(clusterAddress) + FLINK_JOBS;
     }
 
-    public String getSubtaskInformation(String job_id, String vertexId) {
-        return getBASE_URL_FLINK() + FLINK_JOBS + job_id + "/vertices/" + vertexId;
+    public String getSubtaskInformation(String clusterAddress, String job_id, String vertexId) {
+        return getBaseUrl(clusterAddress) + FLINK_JOBS + job_id + "/vertices/" + vertexId;
     }
 
-    public String getJob(String jobId) {
-        return getBASE_URL_FLINK() + FLINK_JOBS + jobId;
+    public String getJob(String clusterAddress, String jobId) {
+        return getBaseUrl(clusterAddress) + FLINK_JOBS + jobId;
     }
 
-    public String getTaskmanagers() {
-        return getBASE_URL_FLINK() + FLINK_TASKMANAGERS;
+    public String getTaskmanagers(String clusterAddress) {
+        return getBaseUrl(clusterAddress) + FLINK_TASKMANAGERS;
     }
 
-    public String getJars() {
-        return getBASE_URL_FLINK() + FLINK_JARS_UPLOAD;
+    public String getJars(String clusterAddress) {
+        return getBaseUrl(clusterAddress) + FLINK_JARS_UPLOAD;
     }
 
-    public String getJarsRun(String jarID) {
-        return getBASE_URL_FLINK() + FLINK_JARS + "/" + jarID + "/run";
+    public String getJarsRun(String clusterAddress, String jarID) {
+        return getBaseUrl(clusterAddress) + FLINK_JARS + "/" + jarID + "/run";
     }
 
-    public String getJarsPlan(String jarID) {
-        return getBASE_URL_FLINK() + FLINK_JARS + "/" + jarID + "/plan";
+    public String getJarsPlan(String clusterAddress, String jarID) {
+        return getBaseUrl(clusterAddress) + FLINK_JARS + "/" + jarID + "/plan";
     }
 }
