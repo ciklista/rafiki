@@ -1,6 +1,7 @@
 package de.tu_berlin.mpds.metric_collector.util;
 
 import de.tu_berlin.mpds.metric_collector.configuration.ApplicationConfiguration;
+import de.tu_berlin.mpds.metric_collector.service.ClusterAddress;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,11 +17,14 @@ public class FlinkQuery {
     private String FLINK_JARS_UPLOAD = "/jars/upload";
     private String FLINK_JARS = "/jars";
 
+
     @Autowired
     private ApplicationConfiguration applicationConfiguration;
+    @Autowired
+    private ClusterAddress clusterAddress;
 
     public String getBASE_URL_FLINK() {
-        BASE_URL_FLINK = applicationConfiguration.getClusteraddress() + ":" + applicationConfiguration.getFlinkPort();
+        BASE_URL_FLINK = clusterAddress.getClusterAddress() + ":" + applicationConfiguration.getFlinkPort();
         return BASE_URL_FLINK;
     }
 
