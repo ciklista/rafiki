@@ -20,13 +20,13 @@ public class ApplicationConfiguration {
     private String postgresdb;
 
 
-    public String getClusteraddress() {
-        return clusteraddress;
-    }
-
-    public void setClusteraddress(String clusteraddress) {
-        this.clusteraddress = clusteraddress;
-    }
+//    public String getClusteraddress() {
+//        return clusteraddress;
+//    }
+//
+//    public void setClusteraddress(String clusteraddress) {
+//        this.clusteraddress = clusteraddress;
+//    }
 
     public String getPrometheusapibasepath() {
         return prometheusapibasepath;

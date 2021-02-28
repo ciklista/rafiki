@@ -1,6 +1,7 @@
 package de.tu_berlin.mpds.metric_collector.util;
 
 import de.tu_berlin.mpds.metric_collector.configuration.ApplicationConfiguration;
+import de.tu_berlin.mpds.metric_collector.service.ClusterAddress;
 import io.mikael.urlbuilder.UrlBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,16 +16,18 @@ public class PrometheusQuery {
     private String BASE_URL_PROMETHEUS;
     @Autowired
     private ApplicationConfiguration applicationConfiguration;
+    @Autowired
+    private ClusterAddress clusterAddress;
 
     private String getBaseUrlPrometheus() {
-        BASE_URL_PROMETHEUS = applicationConfiguration.getClusteraddress() + ":" + applicationConfiguration.getPrometheusPort();
+        BASE_URL_PROMETHEUS = clusterAddress.getClusterAddress() + ":" + applicationConfiguration.getPrometheusPort();
         return BASE_URL_PROMETHEUS;
     }
 
-    private String getBaseUrlPrometheusWithPath() {
-        BASE_URL_PROMETHEUS = applicationConfiguration.getClusteraddress() + ":" + applicationConfiguration.getPrometheusPort() + applicationConfiguration.getPrometheusapibasepath();
-        return BASE_URL_PROMETHEUS;
-    }
+//    private String getBaseUrlPrometheusWithPath() {
+//        BASE_URL_PROMETHEUS = applicationConfiguration.getClusteraddress() + ":" + applicationConfiguration.getPrometheusPort() + applicationConfiguration.getPrometheusapibasepath();
+//        return BASE_URL_PROMETHEUS;
+//    }
 
     public URI getBytesInByTask(String job_id) {
         return build_query("sum by (job_id, task_id) (flink_taskmanager_job_task_numBytesInPerSecond {job_id = \"" + job_id + "\"})");
@@ -111,5 +114,6 @@ public class PrometheusQuery {
                 .addParameter("query", queryString)
                 .toUri();
     }
+
 
 }

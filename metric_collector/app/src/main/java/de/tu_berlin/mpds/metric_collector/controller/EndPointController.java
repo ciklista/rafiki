@@ -1,6 +1,8 @@
 package de.tu_berlin.mpds.metric_collector.controller;
 
+import de.tu_berlin.mpds.metric_collector.service.ClusterAddress;
 import de.tu_berlin.mpds.metric_collector.service.ExperimentRunner;
+import de.tu_berlin.mpds.metric_collector.util.FlinkQuery;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.concurrent.ExecutionException;
@@ -18,10 +20,21 @@ public class EndPointController {
 
 
   private final ExperimentRunner experimentRunner;
+  @Autowired
+  private ClusterAddress clusterAddress;
 
   @Autowired
   public EndPointController(ExperimentRunner experimentRunner) {
     this.experimentRunner = experimentRunner;
+  }
+
+  @PostMapping(value = "/cluster")
+  public ResponseEntity<Object> setClusterAddress(
+                                                @RequestParam(value = "cluster") String clusterIP
+  ) throws  InterruptedException, ExecutionException, SQLException, IOException {
+
+    clusterAddress.setClusterAddress(clusterIP);
+    return ResponseEntity.status(HttpStatus.OK).build();
   }
 
   @PostMapping(value = "/experiment" ,consumes = {"application/json"})
