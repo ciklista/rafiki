@@ -56,21 +56,18 @@ public class ExperimentRunner {
     private DatabaseService databaseService;
 
     public void start(String[] operators,String appJarId, int maximumParallelism) throws InterruptedException, ExecutionException, IOException, SQLException {
-        String[] operatorNames = operators;
-        int maxParallelism = maximumParallelism;
         int lastBackpressuredOperator = -1;
         int[] operatorConfig = null;
         boolean nextExperiment = true;
-        String jarId = appJarId;
         while (nextExperiment) {
-            String jobArg = experimentPlanner.getNextJobArgs(operatorNames, operatorConfig, lastBackpressuredOperator, "1000");
+            String jobArg = experimentPlanner.getNextJobArgs(operators, operatorConfig, lastBackpressuredOperator, "1000");
 
-            ExperimentResult result = run_experiment(jarId, jobArg, 60);
+            ExperimentResult result = run_experiment(appJarId, jobArg, 60);
 
             operatorConfig = result.getParallelismConfig();
             lastBackpressuredOperator = result.getLastBackpressuredOperator();
 
-            if (operatorConfig[lastBackpressuredOperator + 1] == maxParallelism) {
+            if (operatorConfig[lastBackpressuredOperator + 1] == maximumParallelism) {
                 System.out.println("Reached maximum parallelism on the task that is the current bottleneck or on the source task. Aborting.");
                 nextExperiment = false;
             }

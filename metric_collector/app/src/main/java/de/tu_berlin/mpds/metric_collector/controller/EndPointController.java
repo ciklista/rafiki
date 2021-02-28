@@ -1,9 +1,14 @@
 package de.tu_berlin.mpds.metric_collector.controller;
 
+import de.tu_berlin.mpds.metric_collector.model.experiments.ExperimentResults;
+import de.tu_berlin.mpds.metric_collector.service.DatabaseService;
 import de.tu_berlin.mpds.metric_collector.service.ExperimentRunner;
+
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,31 +22,32 @@ import org.springframework.web.bind.annotation.RestController;
 public class EndPointController {
 
 
-  private final ExperimentRunner experimentRunner;
+    private final ExperimentRunner experimentRunner;
 
-  @Autowired
-  public EndPointController(ExperimentRunner experimentRunner) {
-    this.experimentRunner = experimentRunner;
-  }
+    @Autowired
+    private DatabaseService databaseService;
 
-  @PostMapping(value = "/experiment" ,consumes = {"application/json"})
-  public ResponseEntity<Object> startExperiment(@RequestBody String[] operators,
-                                           @RequestParam(value = "jarid") String jarId,@RequestParam(value = "max") int maxParallelism
-                                           ) throws  InterruptedException, ExecutionException, SQLException, IOException {
+    @Autowired
+    public EndPointController(ExperimentRunner experimentRunner) {
+        this.experimentRunner = experimentRunner;
+    }
 
-    experimentRunner.start(operators, jarId, maxParallelism);
-    return ResponseEntity.status(HttpStatus.OK).build();
-  }
+    @PostMapping(value = "/experiment", consumes = {"application/json"})
+    public ResponseEntity<Object> startExperiment(@RequestBody String[] operators,
+                                                  @RequestParam(value = "jarid") String jarId,
+                                                  @RequestParam(value = "maxParallelism") int maxParallelism
+    ) throws InterruptedException, ExecutionException, SQLException, IOException {
 
-  @GetMapping("/result")
-  public ResponseEntity<Object> getResults(){
+        experimentRunner.start(operators, jarId, maxParallelism);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 
-    // here we can have a method which queries the db and sends the objects to the web API.
+    @GetMapping("/result")
+    public ResponseEntity<Object> getResults(@RequestParam(value = "jarId") String jarId)
+            throws IOException, SQLException {
 
+        List<ExperimentResults> results = databaseService.getExperimentResults(jarId);
 
-    return ResponseEntity.status(HttpStatus.OK).build();
-
-    //when we will have a response object we will use the bellow return statement.
-    // return ResponseEntity.ok(the_object_what_we_want_to_send);
-  }
+        return ResponseEntity.ok(results);
+    }
 }
