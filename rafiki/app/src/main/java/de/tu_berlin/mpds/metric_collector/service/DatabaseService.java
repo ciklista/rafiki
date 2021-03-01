@@ -7,14 +7,19 @@ import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Operator;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.OperatorMetric;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result;
 import de.tu_berlin.mpds.metric_collector.model.experiments.ExperimentResults;
+import io.micrometer.core.instrument.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +28,8 @@ import java.util.List;
 public class DatabaseService {
     @Autowired
     private ApplicationConfiguration applicationConfiguration;
-
+    @Autowired
+    private ResourceLoader resourceLoader;
     private Connection getConnection() throws SQLException {
         return DriverManager.getConnection("jdbc:postgresql://" + applicationConfiguration.getPostgreshost() + ':' +
                         applicationConfiguration.getPostgresport() + '/' + applicationConfiguration.getPostgresdb(),
@@ -135,8 +141,9 @@ public class DatabaseService {
     public List<ExperimentResults> getExperimentResults(String jarId) throws SQLException, IOException {
         List<ExperimentResults> resultList = new ArrayList<>();
         Connection conn = getConnection();
-        File file = ResourceUtils.getFile("classpath:experiment_results.sql");
-        String query = file.toString();
+        Resource resource = resourceLoader.getResource("classpath:experiment_results.sql");
+        InputStream inputStream = resource.getInputStream();
+        String query = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         PreparedStatement pst = conn.prepareStatement(query);
         pst.setString(1, jarId);
         ResultSet rs = pst.executeQuery();
