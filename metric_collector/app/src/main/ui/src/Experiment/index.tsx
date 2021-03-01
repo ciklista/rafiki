@@ -20,6 +20,7 @@ import {getOperatorRecordsIn, getOperatorsRecordsOut} from "../PrometheusService
 import {Result} from "../models/Result";
 import {getExperimentResult} from "../MetricCollectorService";
 import {PrometheusData, PrometheusResult} from "../models/Prometheus";
+import { Bar } from 'react-chartjs-2';
 
 export default function Server(props: any) {
     const state: any  = useLocation<any>();
@@ -28,9 +29,10 @@ export default function Server(props: any) {
 
     const [experimentResult, setExperimentResult] = useState<Result[]>([]);
     const [tableData, setTableData] = useState<any[]>([]);
+    const [chartData, setChartData] = useState<any>({})
 
     const [operatorNames, setOperatorNames] = useState<string[]>([]);
-    const [operatorThroughPut, setOperatorThrouhgPut] = useState<number[]>([]);
+    const [operatorThroughPut, setOperatorThroughPut] = useState<number[]>([]);
     const [operatorParallelism, setOperatorParallelism] = useState<number[]>([]);
 
     if (!experiment) history.push('/');
@@ -41,6 +43,9 @@ export default function Server(props: any) {
     const [elements, setElements] = useState(initialElements);
     const configInput = useRef(null);
     const [showIdError, setIdError] = useState<boolean>(false);
+
+    let lastHoveredTableRow: number;
+    let lastHoveredTableCol: number;
 
     useEffect(() => {
         setElements(generateGraphElements());
@@ -69,7 +74,7 @@ export default function Server(props: any) {
                             return result.metric.task_name == lastOperatorName || result.metric.task_name == lastOperatorName.replace(' ', '_')
                         });
                         temp_throughput[temp_throughput.length - 1] = lastOperatorsValue?.value[1];
-                        setOperatorThrouhgPut(temp_throughput);
+                        setOperatorThroughPut(temp_throughput);
                     });
                 });
             }, 1000)
@@ -104,10 +109,7 @@ export default function Server(props: any) {
     }
 
     function createTableData() {
-        const resultParallelisms = experimentResult.map((result: Result) => {
-            return result.operatorParallelism;
-        });
-        const maxParallelism = Math.max(...resultParallelisms);
+        const maxParallelism = getMaxParallelism();
         return operatorNames.map((name: string) => {
             return [...Array(maxParallelism).keys()].map((parallelism: number) => {
                 const throughput = experimentResult.find((result: Result) => {
@@ -116,13 +118,19 @@ export default function Server(props: any) {
                 if (!throughput) {
                     return 0;
                 }
-                return throughput.avgMaxThroughput;
+                return throughput.highestMaxThroughput;
             });
         });
     }
 
+    function getMaxParallelism(): number {
+        const resultParallelisms = experimentResult.map((result: Result) => {
+            return result.operatorParallelism;
+        });
+        return Math.max(...resultParallelisms);
+    }
+
     function generateGraphElements(): any {
-        console.log("Test");
         return operatorParallelism.flatMap((operator: number, index: number, array) =>
             [...Array(operator).keys()].flatMap((suboperator:number) => {
                 let nodesAndEdges: any[] = [];
@@ -193,6 +201,30 @@ export default function Server(props: any) {
         }
     }
 
+    function generateChartData(row: number, col: number) {
+        const operatorName = operatorNames[row];
+        const operatorResult: Result | undefined = experimentResult.find((result: Result) => {
+            return result.taskName === operatorName && result.operatorParallelism === col+1;
+        });
+        const labels = operatorResult?.maxThroughputArray.map((throughput: number, index: number) => {
+            return `Experiment ${index+1}`;
+        });
+        console.log(operatorResult);
+        const data = {
+            labels: labels,
+            datasets: [{
+                label: `Operator ${operatorName} at parallelism ${col+1}`,
+                data: operatorResult?.maxThroughputArray
+            }]
+        };
+        setChartData(data);
+    }
+
+    function onTableRowHover(row: number, col: number) {
+        if (lastHoveredTableRow === row && lastHoveredTableCol === col) return;
+        generateChartData(row, col);
+    }
+
     return (
         <div className="flex-1">
             <Dialog open={showJobInput}>
@@ -246,8 +278,8 @@ export default function Server(props: any) {
                                         <TableCell>
                                             {operatorNames[index]}
                                         </TableCell>
-                                        {row.map((maxThroughput: number) =>
-                                            <TableCell>
+                                        {row.map((maxThroughput: number, col: number) =>
+                                            <TableCell onMouseOver={() => onTableRowHover(index, col)}>
                                                 {maxThroughput}
                                             </TableCell>
                                         )}
@@ -259,6 +291,14 @@ export default function Server(props: any) {
                     <p className="text-gray-600 m-2">
                         A 0 denotes either that the value couldn't be read or that the operator never experienced backpressure
                     </p>
+                    <div className="h-80 w-full">
+                        <Bar
+                            width={10}
+                            height={5}
+                            options={{maintainAspectRatio: false}}
+                            data={chartData}
+                        />
+                    </div>
                 </div>
             }
         </div>
