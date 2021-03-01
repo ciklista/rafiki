@@ -63,7 +63,7 @@ export default function Server(props: any) {
                     const data: PrometheusData = r.data.data;
                     temp_throughput = operatorNames.map((name: string) => {
                         const operator: PrometheusResult | undefined = data.result.find((result: PrometheusResult) => {
-                           return result.metric.task_name == name || result.metric.task_name == name.replace(' ', '_')
+                           return result.metric.task_name === name || result.metric.task_name === name.replace(' ', '_')
                         });
                         return operator?.value[1];
                     });
@@ -71,7 +71,7 @@ export default function Server(props: any) {
                     getOperatorRecordsIn(experiment.ip_adress, jobId, lastOperatorName).then(r => {
                         const data: PrometheusData = r.data.data;
                         const lastOperatorsValue = data.result.find((result: PrometheusResult) => {
-                            return result.metric.task_name == lastOperatorName || result.metric.task_name == lastOperatorName.replace(' ', '_')
+                            return result.metric.task_name === lastOperatorName || result.metric.task_name === lastOperatorName.replace(' ', '_')
                         });
                         temp_throughput[temp_throughput.length - 1] = lastOperatorsValue?.value[1];
                         setOperatorThroughPut(temp_throughput);
@@ -104,7 +104,7 @@ export default function Server(props: any) {
         // @ts-ignore
         const config = configInput.current.value;
         let r_operatorParallelism = config.split(',');
-        if (r_operatorParallelism.length != getOperatorParallelism(job).length) return;
+        if (r_operatorParallelism.length !== getOperatorParallelism(job).length) return;
         setOperatorParallelism(r_operatorParallelism.map((conf: any) => parseInt(conf)));
     }
 
@@ -113,12 +113,12 @@ export default function Server(props: any) {
         return operatorNames.map((name: string) => {
             return [...Array(maxParallelism).keys()].map((parallelism: number) => {
                 const throughput = experimentResult.find((result: Result) => {
-                    return result.taskName == name && result.operatorParallelism == parallelism +1;
+                    return result.taskName === name && result.operatorParallelism === parallelism +1;
                 });
                 if (!throughput) {
-                    return 0;
+                    return '-';
                 }
-                return throughput.highestMaxThroughput;
+                return `${throughput.highestMaxThroughput}${throughput.backpressureConditionHolds? '' : '*'}`;
             });
         });
     }
@@ -192,7 +192,7 @@ export default function Server(props: any) {
 
     function getCapacityPercentage(operatorName: string, operatorParallelism: number, currentThroughput: number): number {
         const operatorResult: Result | undefined = experimentResult.find((result: Result) => {
-            return result.taskName == operatorName && operatorParallelism == result.operatorParallelism
+            return result.taskName === operatorName && operatorParallelism === result.operatorParallelism
         });
         if (operatorResult) {
             return currentThroughput / operatorResult.highestMaxThroughput * 100
@@ -209,7 +209,6 @@ export default function Server(props: any) {
         const labels = operatorResult?.maxThroughputArray.map((throughput: number, index: number) => {
             return `Experiment ${index+1}`;
         });
-        console.log(operatorResult);
         const data = {
             labels: labels,
             datasets: [{
@@ -260,17 +259,19 @@ export default function Server(props: any) {
                 </div>
                 <JobGraph initialElements={elements} test={"Test"} />
             </div>}
-            {tableData && !showJobInput &&
+            {tableData[0] && !showJobInput &&
                 <div>
                     <TableContainer>
                         <Table>
                             <TableHead>
-                                <TableCell>Throughput per Parallelism</TableCell>
-                                {tableData.map((col: any, index: number) =>
-                                    <TableCell>
-                                        {index+1}
-                                    </TableCell>
-                                )}
+                                <TableRow>
+                                    <TableCell>Throughput per Parallelism</TableCell>
+                                    {tableData[0].map((col: any, index: number) =>
+                                        <TableCell>
+                                            {index+1}
+                                        </TableCell>
+                                    )}
+                                </TableRow>
                             </TableHead>
                             <TableBody>
                                 {tableData.map((row: any[], index: number) =>
@@ -289,7 +290,8 @@ export default function Server(props: any) {
                         </Table>
                     </TableContainer>
                     <p className="text-gray-600 m-2">
-                        A 0 denotes either that the value couldn't be read or that the operator never experienced backpressure
+                        * denotes that the operator with that parallelism never experienced backpressure so we can only
+                        provide the highest throughput we measured.
                     </p>
                     <div className="h-80 w-full">
                         <Bar

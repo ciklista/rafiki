@@ -4,5 +4,6 @@ export interface Result {
     maxThroughputArray: number[],
     avgMaxThroughput: number,
     highestMaxThroughput: number,
-    operatorPosition: number
+    operatorPosition: number,
+    backpressureConditionHolds: boolean
 }
