@@ -9,7 +9,9 @@ import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Result;
 import de.tu_berlin.mpds.metric_collector.model.experiments.ExperimentResults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ResourceUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -133,7 +135,8 @@ public class DatabaseService {
     public List<ExperimentResults> getExperimentResults(String jarId) throws SQLException, IOException {
         List<ExperimentResults> resultList = new ArrayList<>();
         Connection conn = getConnection();
-        String query = Files.readString(Paths.get("src/main/java/de/tu_berlin/mpds/metric_collector/service/experiment_results.sql"));
+        File file = ResourceUtils.getFile("classpath:experiment_results.sql");
+        String query = file.toString();
         PreparedStatement pst = conn.prepareStatement(query);
         pst.setString(1, jarId);
         ResultSet rs = pst.executeQuery();

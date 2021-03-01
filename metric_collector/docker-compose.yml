@@ -1,13 +1,25 @@
 version: '3.4'
 
 services:
-  metric-collector-app:
+  rafiki-backend:
     build:
       context: ./app
       dockerfile: Dockerfile
     networks:
-      - metric_collector
-    container_name: metric_collector
+      - rafiki-network
+    ports:
+      - "8080:8080"
+    container_name: rafiki-backend
+
+  rafiki-ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    networks:
+      - rafiki-network
+    ports:
+      - "3000:3000"
+    container_name: rafiki-ui
 
   postgres:
     build:
@@ -19,14 +31,14 @@ services:
       - POSTGRES_DB=metric_collector
     container_name: postgres
     volumes:
-      - pg_metrics:/var/lib/postgresql/data
+      - pg-metrics:/var/lib/postgresql/data
     ports:
       - "30050:5432"
     networks:
-      - metric_collector
+      - rafiki-network
 
 volumes:
-  pg_metrics:
+  pg-metrics:
 
 networks:
-  metric_collector:
+  rafiki-network:
