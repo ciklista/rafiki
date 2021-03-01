@@ -187,7 +187,7 @@ export default function Server(props: any) {
             return result.taskName == operatorName && operatorParallelism == result.operatorParallelism
         });
         if (operatorResult) {
-            return currentThroughput / operatorResult.avgMaxThroughput * 100
+            return currentThroughput / operatorResult.highestMaxThroughput * 100
         } else {
             return 0;
         }
