@@ -198,7 +198,7 @@ export default function Server(props: any) {
             <Dialog open={showJobInput}>
                 <DialogContent>
                     <DialogContentText>
-                        Experiment Id for the Planned JarId {experiment.jar_id}:
+                        Job Id for the Planned JarId {experiment.jar_id}:
                     </DialogContentText>
                     <form className="flex flex-row items-end justify-between" onSubmit={submitJobId}>
                         <TextField
