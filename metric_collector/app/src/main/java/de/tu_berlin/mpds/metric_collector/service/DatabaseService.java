@@ -143,7 +143,8 @@ public class DatabaseService {
                     (Integer[]) rs.getArray("max_throughput").getArray(),
                     rs.getInt("avg_max_throughput"),
                     rs.getInt("highest_max_throughput"),
-                    rs.getInt("operator_position"));
+                    rs.getInt("operator_position"),
+                    rs.getBoolean("backpressure_condition_holds"));
             resultList.add(result);
         }
         return resultList;

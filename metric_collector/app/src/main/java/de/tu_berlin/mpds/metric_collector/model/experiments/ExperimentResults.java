@@ -14,4 +14,5 @@ public class ExperimentResults {
     private int avgMaxThroughput;
     private int highestMaxThroughput;
     private int operatorPosition;
+    private boolean backpressureConditionHolds;
 }
