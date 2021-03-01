@@ -48,10 +48,9 @@ WITH all_jobs AS (SELECT job_id, job_name
                 array_agg(max_records_out ::int) as max_throughput,
                 avg(max_records_out) ::int       as avg_max_throughput,
                 max(max_records_out) :: int      as highest_max_throughput,
-                operator_position
-         FROM jobs_to_jar_id m
-                  LEFT JOIN experiments.results r
-                            ON (m.experiment_id = r.experiment_id)
+                operator_position,
+                True                             as backpressure_condition_holds
+         FROM jobs_to_jar_id j
          WHERE previous_operator_backpressure > 0.5
            AND max_backpresure < 0.5
            AND 0 < operator_position
@@ -64,25 +63,43 @@ WITH all_jobs AS (SELECT job_id, job_name
                 array_agg(max_records_out ::int) as max_throughput,
                 avg(max_records_out) ::int       as avg_max_throughput,
                 max(max_records_out) :: int      as highest_max_throughput,
-                operator_position
-         FROM metrics m
-                  LEFT JOIN experiments.results r
-                            ON (m.experiment_id = r.experiment_id)
+                operator_position,
+                True                             as backpressure_condition_holds
+
+         FROM jobs_to_jar_id j
          WHERE operator_position = 0
          GROUP BY task_name, operator_parallelism, operator_position
          ORDER BY task_name, operator_parallelism),
+
      sink_operator as (
          SELECT task_name,
                 operator_parallelism,
                 array_agg(max_records_in ::int) as max_throughput,
                 avg(max_records_in) ::int       as avg_max_throughput,
                 max(max_records_in) :: int      as highest_max_throughput,
-                operator_position
-         FROM metrics m
-                  LEFT JOIN experiments.results r
-                            ON (m.experiment_id = r.experiment_id)
+                operator_position,
+                False                           as backpressure_condition_holds
+
+         FROM jobs_to_jar_id j
          WHERE task_name IN (SELECT task_name FROM last_oparator)
          GROUP BY task_name, operator_parallelism, operator_position
+         ORDER BY task_name, operator_parallelism),
+     non_backpressure_condition_operators as (
+         SELECT j.task_name,
+                j.operator_parallelism,
+                array_agg(j.max_records_out ::int) as max_throughput,
+                avg(j.max_records_out) ::int       as avg_max_throughput,
+                max(j.max_records_out) :: int      as highest_max_throughput,
+                j.operator_position,
+                False                              as backpressure_condition_holds
+         FROM jobs_to_jar_id j
+                  LEFT JOIN intermediate_operators io
+                            ON (j.task_name = io.task_name
+                                AND j.operator_parallelism = io.operator_parallelism)
+         WHERE io.operator_parallelism ISNULL
+           AND 0 < j.operator_position
+           AND j.task_name NOT IN (SELECT task_name FROM last_oparator)
+         GROUP BY j.task_name, j.operator_parallelism, j.operator_position
          ORDER BY task_name, operator_parallelism)
 SELECT *
 FROM intermediate_operators
@@ -92,6 +109,7 @@ FROM source_operator
 UNION ALL
 SELECT *
 FROM sink_operator
+UNION ALL
+SELECT *
+FROM non_backpressure_condition_operators
 ORDER BY operator_position, operator_parallelism
-;
-

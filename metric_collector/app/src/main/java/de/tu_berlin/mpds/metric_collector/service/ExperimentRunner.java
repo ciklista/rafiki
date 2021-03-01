@@ -1,7 +1,5 @@
 package de.tu_berlin.mpds.metric_collector.service;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Job;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.Operator;
 import de.tu_berlin.mpds.metric_collector.model.eperimentmetrics.OperatorMetric;
@@ -21,11 +19,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.http.HttpClient;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
