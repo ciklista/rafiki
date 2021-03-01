@@ -131,7 +131,9 @@ export default function AddExperiment() {
                         </Fade>
                         <Fade in={submitting}>
                             <div className="flex flex-row items-center">
-                                <CircularProgress />
+                                <div>
+                                    <CircularProgress />
+                                </div>
                                 { uploading &&
                                     <span className="ml-2">Uploading Jar to Flink Server. This may take a while</span>
                                 }

@@ -20,7 +20,7 @@ import {getOperatorRecordsIn, getOperatorsRecordsOut} from "../PrometheusService
 import {Result} from "../models/Result";
 import {getExperimentResult} from "../MetricCollectorService";
 import {PrometheusData, PrometheusResult} from "../models/Prometheus";
-import { Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 
 export default function Server(props: any) {
     const state: any  = useLocation<any>();
@@ -45,7 +45,6 @@ export default function Server(props: any) {
     const [showIdError, setIdError] = useState<boolean>(false);
 
     let lastHoveredTableRow: number;
-    let lastHoveredTableCol: number;
 
     useEffect(() => {
         setElements(generateGraphElements());
@@ -201,27 +200,27 @@ export default function Server(props: any) {
         }
     }
 
-    function generateChartData(row: number, col: number) {
+    function generateChartData(row: number) {
         const operatorName = operatorNames[row];
-        const operatorResult: Result | undefined = experimentResult.find((result: Result) => {
-            return result.taskName === operatorName && result.operatorParallelism === col+1;
+        let operatorResults: Result[] = experimentResult.filter((result: Result) => {
+            return result.taskName === operatorName;
         });
-        const labels = operatorResult?.maxThroughputArray.map((throughput: number, index: number) => {
-            return `Experiment ${index+1}`;
-        });
+        operatorResults.sort((a: Result, b: Result) => a.operatorParallelism - b.operatorParallelism);
+        const labels = operatorResults.map((result: Result) => 'Parallelism of ' + result.operatorParallelism);
+        const chartData = operatorResults.map((result: Result) => result.highestMaxThroughput);
         const data = {
             labels: labels,
             datasets: [{
-                label: `Operator ${operatorName} at parallelism ${col+1}`,
-                data: operatorResult?.maxThroughputArray
+                label: `Operator ${operatorName} throughput at different parallelism`,
+                data: chartData
             }]
         };
         setChartData(data);
     }
 
-    function onTableRowHover(row: number, col: number) {
-        if (lastHoveredTableRow === row && lastHoveredTableCol === col) return;
-        generateChartData(row, col);
+    function onTableRowHover(row: number) {
+        if (lastHoveredTableRow === row) return;
+        generateChartData(row);
     }
 
     return (
@@ -275,12 +274,12 @@ export default function Server(props: any) {
                             </TableHead>
                             <TableBody>
                                 {tableData.map((row: any[], index: number) =>
-                                    <TableRow key={index}>
+                                    <TableRow key={index} onMouseOver={() => onTableRowHover(index)}>
                                         <TableCell>
                                             {operatorNames[index]}
                                         </TableCell>
                                         {row.map((maxThroughput: number, col: number) =>
-                                            <TableCell onMouseOver={() => onTableRowHover(index, col)}>
+                                            <TableCell>
                                                 {maxThroughput}
                                             </TableCell>
                                         )}
@@ -294,7 +293,7 @@ export default function Server(props: any) {
                         provide the highest throughput we measured.
                     </p>
                     <div className="h-80 w-full">
-                        <Bar
+                        <Line
                             width={10}
                             height={5}
                             options={{maintainAspectRatio: false}}
