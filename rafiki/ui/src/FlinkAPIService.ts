@@ -1,5 +1,4 @@
 import axios from 'axios';
-import {Job} from "./models/FlinkApiResponse/Job";
 
 export function uploadJar(jar: File, ip: string): Promise<any> {
     return jar.arrayBuffer().then(buffer => {
