@@ -51,7 +51,7 @@ export default function AddExperiment() {
                 setSubmitting(false);
                 setUploading(false);
                 history.push({
-                    pathname: `/experiments/${getJarId(r.data.filename)}`,
+                    pathname: `/experiment/${getJarId(r.data.filename)}`,
                     state: new_job
                 });
             });

@@ -3,12 +3,12 @@ import './App.css';
 import Header from './Header';
 import Home from './Home';
 import Experiment from './Experiment';
-import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
+import {BrowserRouter, Switch, Route} from "react-router-dom";
 
 function App() {
   return (
     <div className="bg-gray-100 min-h-screen flex flex-col">
-      <Router>
+      <BrowserRouter>
         <Header />
         <Switch>
           <Route exact path="/">
@@ -18,7 +18,7 @@ function App() {
             <Experiment />
           </Route>
         </Switch>
-      </Router>
+      </BrowserRouter>
     </div>
   );
 }

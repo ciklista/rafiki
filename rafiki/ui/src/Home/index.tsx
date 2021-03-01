@@ -1,7 +1,7 @@
 import Experiment from '../models/Experiment';
 import React from 'react';
 import './Home.css';
-import { Link } from 'react-router-dom';
+import {Link, useHistory} from 'react-router-dom';
 import AddExperiment from '../AddExperiment';
 import useLocalState from '../useLocalState';
 import DeleteIcon from '@material-ui/icons/Delete';
@@ -9,6 +9,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 export default function Home() {
 
     const [jobs, setJobs] = useLocalState([], 'job-list');
+    const history = useHistory();
 
     function deleteJob(e: any, index: number): void {
         e.stopPropagation();
