@@ -1,8 +1,30 @@
-# stream-capactiy-planer-ws2021
+# Rafiki: Operator level capacity planning for DSPs
+Rafiki is a tool that collects information on the capacity of single DSP operators according to their individual parallelism settings. Rafiki includes a UI that allows to start the information collection (experiments) and can display live capactiy information on a running job.
+We currently support flink jobs, but Rafiki can easily be expanded to support other DSPs as well. 
 
-## Infrastructrue
+## Deploy
+Move to the rafiki directory:
+```
+cd rafiki
+```
 
-### Create a Kubernetes cluster on Google Cloud
+Build the backend java springboot app:
+```
+cd app && mvn package
+```
+
+Start the docker containers:
+```
+docker-compose up -d
+```
+
+The UI is reachable from [http://localhost:3000/](http://localhost:3000/).
+
+## Test & develop
+We provide a test setup including a flink cluster running on Kubernetes and two example flink jobs: the [yahoo benchmark](example_jobs/yahoo-benchmark/) and an [IoT inspired job](example_jobs/iot-vehicles-experiment/).
+
+### Infrastructrue
+#### Create a Kubernetes cluster on Google Cloud
 
 The following commands assume that a project has been created in GCP and ``gcloud`` has been configured for use.
 
@@ -34,7 +56,7 @@ gcloud compute firewall-rules create nodeports \
   --allow tcp --source-ranges=0.0.0.0/0
 ```
 
-### Deploy Helm charts
+#### Deploy Helm charts
 Kafka, Flink, Redis, Prometheus, and Grafana can be deployed on a Kubernetes cluster using the [Helm](https://helm.sh) charts located in the ``helm-charts`` directory. Configure which charts to deploy in the global values.yaml by setting ``enabled: true`` for each desired technology. Cluster sizes and ports for external access can also be specified here.
 
 Each subchart can be deployed by itself and contains its own values.yaml file with futher configurations. If deployed from the umbrella chart, values in the global values.yaml will overwrite the values in the subchart's values.yaml.
@@ -54,7 +76,7 @@ Uninstall the charts with:
 helm uninstall [DEPLOYMENT NAME]
 ```
 
-### Viewing metrics in Grafana
+#### Viewing metrics in Grafana
 
 Grafana is accessible at <kubernetes_node_ip>:<nodeport>.
 The default nodeport is ``30080`` and the default username and password is ``admin``

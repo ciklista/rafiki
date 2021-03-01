@@ -1,0 +1,44 @@
+version: '3.4'
+
+services:
+  rafiki-backend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    networks:
+      - rafiki-network
+    ports:
+      - "8080:8080"
+    container_name: rafiki-backend
+
+  rafiki-ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    networks:
+      - rafiki-network
+    ports:
+      - "3000:3000"
+    container_name: rafiki-ui
+
+  postgres:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_USER=mpds
+      - POSTGRES_DB=metric_collector
+    container_name: postgres
+    volumes:
+      - pg-metrics:/var/lib/postgresql/data
+    ports:
+      - "30050:5432"
+    networks:
+      - rafiki-network
+
+volumes:
+  pg-metrics:
+
+networks:
+  rafiki-network:
