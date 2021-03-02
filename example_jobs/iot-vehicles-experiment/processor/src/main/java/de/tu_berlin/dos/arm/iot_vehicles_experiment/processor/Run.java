@@ -94,6 +94,7 @@ public class Run {
             }
             // calculate time in hours
             double time = (count * updateInterval) / 3600000d;
+
             int avgSpeed = 0;
             if (time != 0) avgSpeed = (int) ((distance/1000) / time);
             assert previous != null;
@@ -107,7 +108,7 @@ public class Run {
         public final int speedLimit;
 
         public SpeedingFilter(int speedLimit) {
-
+            
             this.speedLimit = speedLimit;
         }
 
@@ -209,7 +210,7 @@ public class Run {
         env.setStateBackend(backend);*/
 
         // start a checkpoint based on supplied interval
-        env.enableCheckpointing(interval);
+        //env.enableCheckpointing(interval);
 
         // set mode to exactly-once (this is the default)
         env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
