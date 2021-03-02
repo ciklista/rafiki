@@ -8,6 +8,7 @@ WITH all_jobs AS (SELECT job_id, job_name
                 max(operator_position) as operator_position
          FROM experiments.operators o
                   LEFT JOIN all_jobs j ON o.job_id = j.job_id
+         WHERE j.job_id NOTNULL
          GROUP BY operator_id),
      add_previous_operator AS (
          SELECT *,
