@@ -296,7 +296,7 @@ export default function Server(props: any) {
                         <Line
                             width={10}
                             height={5}
-                            options={{maintainAspectRatio: false}}
+                            options={{maintainAspectRatio: false, scales: {yAxes: [{ticks: {beginAtZero: true}}]}}}
                             data={chartData}
                         />
                     </div>
