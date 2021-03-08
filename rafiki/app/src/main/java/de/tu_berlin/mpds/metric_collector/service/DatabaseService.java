@@ -61,7 +61,7 @@ public class DatabaseService {
     public void insertOperators(List<Operator> operators) throws SQLException {
         Connection conn = getConnection();
         for (Operator operator : operators) {
-            String sql = "INSERT INTO experiments.operators (operator_id,job_id, task_name, operator_position) VALUES (?,?,?,?);";
+            String sql = "INSERT INTO experiments.tasks (task_id,job_id, task_name, task_position) VALUES (?,?,?,?);";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, operator.getOperatorId());
             pstmt.setString(2, operator.getJobId());
@@ -80,7 +80,7 @@ public class DatabaseService {
     public void insertOperatorMetrics(List<OperatorMetric> metrics) throws SQLException {
         Connection conn = getConnection();
         for (OperatorMetric metric : metrics) {
-            String sql = "INSERT INTO experiments.operator_metrics (experiment_id,operator_id,job_id, max_records_in, max_records_out, max_bytes_in, max_bytes_out, max_latency, min_latency, max_backpresure, operator_parallelism) VALUES (?,?,?,?,?,?,?, ?, ?,?,?);";
+            String sql = "INSERT INTO experiments.metrics (experiment_id,task_id,job_id, max_records_in, max_records_out, max_bytes_in, max_bytes_out, max_latency, min_latency, max_backpresure, task_parallelism) VALUES (?,?,?,?,?,?,?, ?, ?,?,?);";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, metric.getExperimentId());
             pstmt.setString(2, metric.getOperatorId());
@@ -126,17 +126,6 @@ public class DatabaseService {
         insertResults(resultsList);
     }
 
-    public void insertKafkaMetric(List<KafkaMetric> kafkaMetricList) throws SQLException {
-        Connection conn = getConnection();
-        for (KafkaMetric result : kafkaMetricList) {
-            String sql = "INSERT INTO experiments.kafka_metrics (experiment_id, max_kafka_lag, mac_kafka_messages_per_second) VALUES (?,?,?);";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, result.getExperimentId());
-            pstmt.setDouble(2, result.getKafkaLag());
-            pstmt.setDouble(3, result.getKafkaMessagesPerSecond());
-            pstmt.executeUpdate();
-        }
-    }
 
     public List<ExperimentResults> getExperimentResults(String jarId) throws SQLException, IOException {
         List<ExperimentResults> resultList = new ArrayList<>();
@@ -149,11 +138,11 @@ public class DatabaseService {
         ResultSet rs = pst.executeQuery();
         while (rs.next()) {
             ExperimentResults result = new ExperimentResults(rs.getString("task_name"),
-                    rs.getInt("operator_parallelism"),
+                    rs.getInt("task_parallelism"),
                     (Integer[]) rs.getArray("max_throughput").getArray(),
                     rs.getInt("avg_max_throughput"),
                     rs.getInt("highest_max_throughput"),
-                    rs.getInt("operator_position"),
+                    rs.getInt("task_position"),
                     rs.getBoolean("backpressure_condition_holds"));
             resultList.add(result);
         }
