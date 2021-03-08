@@ -8,13 +8,13 @@ CREATE TABLE IF NOT EXISTS experiments.jobs
     PRIMARY KEY (job_id)
 );
 
-CREATE TABLE IF NOT EXISTS experiments.operators
+CREATE TABLE IF NOT EXISTS experiments.tasks
 (
-    operator_id            TEXT, -- is task id
+    task_id                TEXT,
     job_id                 TEXT,
     task_name              TEXT,
-    operator_position      INT,
-    PRIMARY KEY (operator_id, job_id),
+    task_position      INT,
+    PRIMARY KEY (task_id, job_id),
     FOREIGN KEY (job_id) REFERENCES experiments.jobs (job_id)
 
 
@@ -27,25 +27,16 @@ CREATE TABLE IF NOT EXISTS experiments.results
     start_timestamp                     BIGINT,
     end_timestamp                       BIGINT,
     PRIMARY KEY (experiment_id),
-     FOREIGN KEY (job_id) REFERENCES experiments.jobs(job_id)
+    FOREIGN KEY (job_id) REFERENCES experiments.jobs(job_id)
 
 );
 
-CREATE TABLE IF NOT EXISTS experiments.kafka_metrics
-(
-    experiment_id                 TEXT,
-    max_kafka_lag                 NUMERIC,
-    mac_kafka_messages_per_second NUMERIC,
-    FOREIGN KEY (experiment_id) REFERENCES experiments.results (experiment_id)
-
-);
-
-CREATE TABLE IF NOT EXISTS experiments.operator_metrics
+CREATE TABLE IF NOT EXISTS experiments.metrics
 (
     experiment_id        TEXT,
-    operator_id          TEXT,
+    task_id              TEXT,
     job_id               TEXT,
-    operator_parallelism INT,
+    task_parallelism     INT,
     max_records_in       NUMERIC,
     max_records_out      NUMERIC,
     max_bytes_in         NUMERIC,
@@ -54,7 +45,7 @@ CREATE TABLE IF NOT EXISTS experiments.operator_metrics
     min_latency          NUMERIC,
     max_backpresure      NUMERIC,
     FOREIGN KEY (experiment_id) REFERENCES experiments.results (experiment_id),
-    FOREIGN KEY (operator_id, job_id) REFERENCES experiments.operators (operator_id, job_id)
+    FOREIGN KEY (task_id, job_id) REFERENCES experiments.tasks (task_id, job_id)
 
 
 );
