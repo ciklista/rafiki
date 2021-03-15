@@ -62,7 +62,11 @@ WITH all_tasks AS (
                 avg(max_records_out) ::int       as avg_max_throughput,
                 max(max_records_out) :: int      as highest_max_throughput,
                 task_position,
-                True                             as backpressure_condition_holds
+                CASE
+                    WHEN max(max_backpresure) > 0.5
+                        THEN FALSE
+                    ELSE
+                        True END                 as backpressure_condition_holds
          FROM metrics m
          WHERE task_position = 0
          GROUP BY jar_id, task_name, task_parallelism, task_position
