@@ -45,7 +45,7 @@ WITH all_tasks AS (
                 avg(max_records_out) ::int       as avg_max_throughput,
                 max(max_records_out) :: int      as highest_max_throughput,
                 task_position,
-         // we will aggregate the backpressure condition across all runs with that config. Could also be more granular (sperating between runs where backprassure condition holds and where not)
+         -- we will aggregate the backpressure condition across all runs with that config. Could also be more granular (sperating between runs where backprassure condition holds and where not)
                 CASE
                     WHEN max(previous_task_backpressure) >= 0.5 AND max(max_backpresure) < 0.5
                         THEN TRUE
